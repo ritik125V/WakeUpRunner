@@ -7,7 +7,7 @@ import { executeSingleStep } from './runnerEngine';
 
 export const CENTRALIZED_API_RUNNER_URL =
   process.env.NEXT_PUBLIC_API_RUNNER_URL ||
-  'https://wakeup-api-runner.ritikvermav5.workers.dev/api';
+  'https://run.putman.r8r.in/api';
 
 const RUNNER_URL_KEY = 'putman_custom_api_runner_url';
 
@@ -54,9 +54,9 @@ export function isLocalOrInternalUrl(urlStr: string = ''): boolean {
 
 /**
  * Execute a single step
- * 1. Prioritizes local Next.js proxy route (/api/runner/execute-step) to bypass CORS and access localhost:*
- * 2. For local targets, NEVER routes to remote Cloudflare workers (which fail with error 1003)
- * 3. Falls back seamlessly to in-memory browser engine
+ * 1. For localhost / private network targets: executes directly in the browser (executeSingleStep)
+ * 2. For public APIs: executes via the dedicated edge runner microservice (https://run.putman.r8r.in/api)
+ * 3. Falls back seamlessly to browser engine if edge runner fails
  */
 export async function executeStepClient(
   step: IWorkflowStepData,
@@ -65,35 +65,13 @@ export async function executeStepClient(
 ): Promise<IStepLogTelemetry> {
   const isLocalTarget = isLocalOrInternalUrl(step.url);
 
-  // 1. First Priority: Local Next.js API Runner Proxy
-  // Has direct access to local machine ports, zero CORS restrictions, and handles Set-Cookie headers
-  try {
-    const localRes = await fetch('/api/runner/execute-step', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        step,
-        variablesContext,
-        cookiesContext,
-      }),
-    });
-
-    if (localRes.ok) {
-      const data = await localRes.json();
-      if (data && data.result) {
-        return data.result;
-      }
-    }
-  } catch (err) {
-    // Next.js API route not available or offline
-  }
-
-  // 2. If URL targets localhost/LAN: NEVER send to Cloudflare Worker (Worker will fail with error 1003)
+  // 1. Localhost / Private network: Execute directly in the browser
+  // (Edge runners cannot reach user's local machine, so browser executes directly)
   if (isLocalTarget) {
     return await executeSingleStep(step, variablesContext, cookiesContext);
   }
 
-  // 3. For public external URLs: Try configured edge runner
+  // 2. Public Internet APIs: Execute via Putman Edge Runner (https://run.putman.r8r.in/api)
   const runnerUrl = getApiRunnerUrl().replace(/\/$/, '');
   try {
     const res = await fetch(`${runnerUrl}/execute-step`, {
@@ -109,19 +87,14 @@ export async function executeStepClient(
     if (res.ok) {
       const data = await res.json();
       if (data && data.result) {
-        // If edge worker encountered a Cloudflare direct IP block, fallback to browser engine
-        const respStr = String(data.result.responseBody || data.result.responseSnippet || '');
-        if (respStr.includes('error code: 1003') || (data.result.statusCode === 403 && respStr.includes('1003'))) {
-          return await executeSingleStep(step, variablesContext, cookiesContext);
-        }
         return data.result;
       }
     }
   } catch (err) {
-    console.warn(`Centralized runner via ${runnerUrl} failed, falling back to local runner engine:`, err);
+    console.warn(`Edge runner via ${runnerUrl} failed, falling back to browser engine:`, err);
   }
 
-  // 4. In-memory browser runner engine fallback
+  // 3. Fallback: In-memory browser runner engine execution
   return await executeSingleStep(step, variablesContext, cookiesContext);
 }
 
