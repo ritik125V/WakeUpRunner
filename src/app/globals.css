@@ -1,0 +1,502 @@
+@import "tailwindcss";
+
+:root {
+  --background: #000000;
+  --foreground: #e5e5e5;
+  --panel-base: #121214;
+  --panel-interactive: #1a1a1e;
+  --panel-hover: #242429;
+  --input-fill: #161619;
+  --accent-primary: #FF6C37;
+  --accent-hover: #FF8A5C;
+
+  /* Putman Signature Theme Tokens */
+  --color-canvas: #09090b;
+  --color-surface: #121214;
+  --color-surface-hover: #18181c;
+  --color-surface-active: #222228;
+  --color-input: #161619;
+  --color-text-primary: #f5f0e8;
+  --color-text-secondary: #a3a3a3;
+  --color-text-muted: #52525b;
+  --color-border-subtle: transparent;
+  --color-border-prominent: transparent;
+  --color-accent: #FF6C37;
+  --color-accent-contrast: #ffffff;
+  --color-accent-highlight: #FF6C37;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-jakarta-sans), var(--font-geist-sans), system-ui, -apple-system, sans-serif;
+  --font-mono: var(--font-geist-mono), monospace;
+}
+
+*:focus-visible {
+  outline: 2px solid #FF6C37 !important;
+  outline-offset: 2px;
+}
+
+body {
+  background-color: var(--color-canvas, #000000);
+  color: var(--color-text-primary, #e5e5e5);
+  font-family: var(--font-jakarta-sans), var(--font-geist-sans), system-ui, -apple-system, sans-serif;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+/* Minimalist Dark Panels */
+.glass-panel {
+  background: var(--color-surface, #121214);
+  border-radius: 8px;
+}
+
+.glass-panel-interactive {
+  background: var(--color-surface, #1a1a1e);
+  border-radius: 8px;
+  transition: background-color 0.15s ease, transform 0.15s ease;
+}
+
+.glass-panel-interactive:hover {
+  background: var(--color-surface-hover, #242429);
+}
+
+/* HTTP Method Badge Colors */
+.badge-get {
+  background-color: #064e3b;
+  color: #6ee7b7;
+}
+
+.badge-post {
+  background-color: #78350f;
+  color: #fde047;
+}
+
+.badge-put {
+  background-color: #0c4a6e;
+  color: #7dd3fc;
+}
+
+.badge-patch {
+  background-color: #3b0764;
+  color: #d8b4fe;
+}
+
+.badge-delete {
+  background-color: #7f1d1d;
+  color: #fca5a5;
+}
+
+.badge-head {
+  background-color: #1e293b;
+  color: #cbd5e1;
+}
+
+.badge-options {
+  background-color: #312e81;
+  color: #a5b4fc;
+}
+
+/* Variable Tag Pill with Putman Orange */
+.variable-pill {
+  background: rgba(255, 108, 55, 0.14);
+  color: #FF8A5C;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+}
+
+/* Custom Minimal Scrollbar */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+::-webkit-scrollbar-track {
+  background: #0d0d10;
+}
+::-webkit-scrollbar-thumb {
+  background: #26262a;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #3f3f46;
+}
+
+/* Touch & Micro-Interaction Enhancements */
+.touch-manipulation {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.touch-press {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.12s ease, opacity 0.12s ease, background-color 0.12s ease;
+}
+
+.touch-press:active {
+  transform: scale(0.97);
+  opacity: 0.9;
+}
+
+.touch-card {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.15s ease, background-color 0.15s ease;
+}
+
+.touch-card:active {
+  transform: scale(0.985);
+}
+
+/* Putman Orange Utility Accents */
+.accent-putman {
+  color: #FF6C37 !important;
+}
+
+.bg-putman-orange {
+  background-color: #FF6C37 !important;
+}
+
+.bg-putman-orange-hover:hover {
+  background-color: #FF8A5C !important;
+}
+
+/* =========================================================================
+   COMPREHENSIVE MULTI-THEME ENGINE
+   Optimizes Dracula, Panda, Tokyo Night, Monokai Pro, Clean Light across
+   all UI panels, headers, editors, step lists, modals, and drawers.
+   ========================================================================= */
+
+[data-theme]:not([data-theme="putman-dark"]) {
+  /* Canvas layers */
+  .bg-black,
+  .bg-\[\#050505\],
+  .bg-\[\#09090b\],
+  .bg-\[\#0a0a0c\] {
+    background-color: var(--color-canvas) !important;
+  }
+
+  /* Primary Surfaces / Cards / Panels / Header / Drawer */
+  .bg-\[\#121214\],
+  .bg-\[\#101012\],
+  .bg-\[\#141416\],
+  .bg-\[\#141417\],
+  .bg-\[\#141418\],
+  .bg-\[\#161214\],
+  .bg-neutral-950 {
+    background-color: var(--color-surface) !important;
+  }
+
+  /* Inputs, Textareas, Code wells, and Sub-containers */
+  .bg-\[\#161619\],
+  .bg-\[\#0c0c0e\],
+  .bg-\[\#0d0d10\],
+  .bg-neutral-900,
+  [class*="bg-neutral-900/"],
+  [class*="bg-neutral-950/"] {
+    background-color: var(--color-input) !important;
+  }
+
+  /* Interactive rows, cards, badges */
+  .bg-\[\#18181c\],
+  .bg-\[\#1a1a1e\],
+  .bg-\[\#1c1c21\],
+  .bg-neutral-850 {
+    background-color: var(--color-surface-hover) !important;
+  }
+
+  /* Active states and pills */
+  .bg-\[\#1e1e24\],
+  .bg-\[\#202025\],
+  .bg-\[\#222228\],
+  .bg-\[\#242429\],
+  .bg-\[\#25252a\],
+  .bg-neutral-800 {
+    background-color: var(--color-surface-active) !important;
+  }
+
+  /* Hover states across all interactive elements */
+  .hover\:bg-\[\#141417\]:hover,
+  .hover\:bg-\[\#141418\]:hover,
+  .hover\:bg-\[\#161619\]:hover,
+  .hover\:bg-\[\#18181c\]:hover,
+  .hover\:bg-\[\#1a1a1e\]:hover,
+  .hover\:bg-\[\#202025\]:hover,
+  .hover\:bg-\[\#222228\]:hover,
+  .hover\:bg-\[\#242429\]:hover,
+  .hover\:bg-\[\#25252a\]:hover,
+  .hover\:bg-neutral-800:hover,
+  .hover\:bg-neutral-850:hover,
+  .hover\:bg-neutral-900:hover,
+  [class*="hover:bg-neutral-900/"]:hover,
+  [class*="hover:bg-neutral-800/"]:hover {
+    background-color: var(--color-surface-hover) !important;
+  }
+
+  /* =========================================================================
+     BORDERLESS DESIGN SYSTEM
+     Lighter borders are removed across all panels, cards, headers, tables,
+     and step items while preserving full roundness (rounded-lg, rounded-xl, etc.).
+     Borders are strictly preserved ONLY where functionally needed (API URL, active tabs, etc.).
+     ========================================================================= */
+  .border-neutral-700,
+  .border-neutral-750,
+  .border-neutral-800,
+  .border-neutral-850,
+  .border-neutral-900,
+  [class*="border-neutral-"],
+  [class*="border-white/"],
+  .divide-neutral-800,
+  .divide-neutral-900,
+  [class*="divide-neutral-"] {
+    border-color: transparent !important;
+  }
+
+  /* 1. API URL / Address Bar - Clearly Defined Functional Border */
+  .api-url-bar,
+  [data-api-url-bar] {
+    border: 1px solid rgba(255, 255, 255, 0.16) !important;
+  }
+  .api-url-bar:hover,
+  [data-api-url-bar]:hover {
+    border-color: rgba(255, 255, 255, 0.28) !important;
+  }
+  .api-url-bar:focus-within,
+  [data-api-url-bar]:focus-within {
+    border-color: #FF6C37 !important;
+  }
+
+  /* 2. Base URL Override Input */
+  .base-url-input,
+  [data-base-url-input] {
+    border: 1px solid rgba(255, 255, 255, 0.16) !important;
+  }
+  .base-url-input:focus,
+  [data-base-url-input]:focus {
+    border-color: #FF6C37 !important;
+  }
+
+  /* 3. Active Tab Indicator Underline */
+  [class*="border-[#FF6C37]"][class*="border-b-2"] {
+    border-bottom: 2px solid #FF6C37 !important;
+    border-top: none !important;
+    border-left: none !important;
+    border-right: none !important;
+  }
+
+  /* 4. Active Step Left Accent Indicator */
+  [class*="border-l-2"][class*="border-l-[#FF6C37]"],
+  [class*="border-l-2"][class*="border-[#FF6C37]"] {
+    border-left: 2px solid #FF6C37 !important;
+    border-top: none !important;
+    border-right: none !important;
+    border-bottom: none !important;
+  }
+
+  /* 5. Active Selected Theme / Preset Cards */
+  [class*="border-[#FF6C37]"]:not([class*="border-b-2"]):not([class*="border-l-2"]) {
+    border-color: #FF6C37 !important;
+  }
+
+  /* 6. Dashed Dropzones & Upload States */
+  [class*="border-dashed"] {
+    border-color: rgba(255, 255, 255, 0.14) !important;
+  }
+
+  /* Theme Text Colors */
+  .text-white:not([class*="bg-[#FF6C37]"]):not([class*="bg-emerald-"]):not([class*="bg-rose-"]):not([class*="bg-red-"]):not([class*="bg-amber-"]):not([class*="bg-blue-"]):not([class*="bg-purple-"]) {
+    color: var(--color-text-primary) !important;
+  }
+
+  /* Solid accent & status buttons maintain crisp contrast across all themes */
+  [class*="bg-[#FF6C37]"],
+  [class*="bg-emerald-600"],
+  [class*="bg-rose-600"],
+  [class*="bg-red-600"],
+  [class*="bg-blue-600"] {
+    color: #ffffff !important;
+  }
+  [class*="bg-[#FF6C37]"] *,
+  [class*="bg-emerald-600"] *,
+  [class*="bg-rose-600"] *,
+  [class*="bg-red-600"] * {
+    color: inherit;
+  }
+}
+
+/* Specific Dracula Theme Harmonization */
+[data-theme="dracula"] {
+  ::-webkit-scrollbar-track {
+    background: #1e1f29;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #44475a;
+  }
+}
+
+/* Specific Panda Theme Harmonization */
+[data-theme="panda"] {
+  ::-webkit-scrollbar-track {
+    background: #1f2021;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #3b3d40;
+  }
+}
+
+/* Specific Tokyo Night Theme Harmonization */
+[data-theme="tokyo-night"] {
+  ::-webkit-scrollbar-track {
+    background: #16161e;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #292e42;
+  }
+}
+
+/* Specific Monokai Pro Theme Harmonization */
+[data-theme="monokai-pro"] {
+  ::-webkit-scrollbar-track {
+    background: #19181a;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #3a373a;
+  }
+}
+
+/* =========================================================================
+   CLEAN LIGHT THEME SPECIFIC ENGINE
+   ========================================================================= */
+
+[data-theme-type="light"] {
+  body {
+    background-color: var(--color-canvas) !important;
+    color: var(--color-text-primary) !important;
+  }
+
+  /* Typography adaptations for high-contrast readability */
+  .text-white:not([class*="bg-[#FF6C37]"]):not([class*="bg-emerald-"]):not([class*="bg-rose-"]):not([class*="bg-red-"]):not([class*="bg-amber-"]):not([class*="bg-blue-"]):not([class*="bg-purple-"]),
+  .text-neutral-100:not([class*="bg-[#FF6C37]"]):not([class*="bg-emerald-"]):not([class*="bg-rose-"]):not([class*="bg-red-"]) {
+    color: var(--color-text-primary) !important;
+  }
+
+  /* Brand buttons & status badges retain crisp white contrast */
+  [class*="bg-[#FF6C37]"],
+  [class*="bg-emerald-600"],
+  [class*="bg-rose-600"],
+  [class*="bg-red-600"],
+  [class*="bg-blue-600"] {
+    color: #ffffff !important;
+  }
+  [class*="bg-[#FF6C37]"] *,
+  [class*="bg-emerald-600"] *,
+  [class*="bg-rose-600"] *,
+  [class*="bg-red-600"] * {
+    color: #ffffff !important;
+  }
+
+  .text-neutral-200,
+  .text-neutral-300,
+  .text-neutral-400 {
+    color: var(--color-text-secondary) !important;
+  }
+
+  .text-neutral-500 {
+    color: var(--color-text-muted) !important;
+  }
+
+  /* Form Controls, Inputs, and Editors */
+  input,
+  textarea,
+  select {
+    color: var(--color-text-primary) !important;
+    background-color: var(--color-input) !important;
+    border-color: var(--color-border-subtle) !important;
+  }
+
+  input::placeholder,
+  textarea::placeholder {
+    color: var(--color-text-muted) !important;
+    opacity: 0.8;
+  }
+
+  /* Surface Cards, Panels & Modals in Light Mode: Borderless with subtle elevation */
+  .bg-\[\#121214\],
+  .bg-neutral-950,
+  .glass-panel,
+  .bg-\[\#161619\],
+  .bg-\[\#0c0c0e\],
+  .bg-neutral-900 {
+    border-color: transparent !important;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.04) !important;
+  }
+
+  /* 1. API URL / Address Bar in Light Mode */
+  .api-url-bar,
+  [data-api-url-bar] {
+    border: 1px solid #cbd5e1 !important;
+    background-color: #ffffff !important;
+  }
+  .api-url-bar:focus-within,
+  [data-api-url-bar]:focus-within {
+    border-color: #FF6C37 !important;
+  }
+
+  /* 2. Base URL Input in Light Mode */
+  .base-url-input,
+  [data-base-url-input] {
+    border: 1px solid #cbd5e1 !important;
+    background-color: #ffffff !important;
+  }
+  .base-url-input:focus,
+  [data-base-url-input]:focus {
+    border-color: #FF6C37 !important;
+  }
+
+  /* 3. Dashed Dropzones in Light Mode */
+  [class*="border-dashed"] {
+    border-color: #cbd5e1 !important;
+  }
+
+  /* Light Scrollbar */
+  ::-webkit-scrollbar-track {
+    background: #f1f5f9;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 4px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+  }
+
+  /* Light Mode HTTP Method Badges with optimal contrast */
+  .badge-get {
+    background-color: #dcfce7 !important;
+    color: #15803d !important;
+  }
+  .badge-post {
+    background-color: #fef3c7 !important;
+    color: #b45309 !important;
+  }
+  .badge-put {
+    background-color: #e0f2fe !important;
+    color: #0369a1 !important;
+  }
+  .badge-patch {
+    background-color: #f3e8ff !important;
+    color: #7e22ce !important;
+  }
+  .badge-delete {
+    background-color: #fee2e2 !important;
+    color: #b91c1c !important;
+  }
+}

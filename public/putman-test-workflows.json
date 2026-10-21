@@ -1,0 +1,820 @@
+{
+  "version": "1.0.0",
+  "updatedAt": "2026-10-21T19:30:00.000Z",
+  "workflows": [
+    {
+      "_id": "testlab-flow-master-suite",
+      "userId": "guest-local-user",
+      "name": "TestLab: Master Test Suite (All Categories A to F)",
+      "description": "Comprehensive 25-step test suite executing all API types: Verbs, Strict PUT, Deep JSONPath, JWT Auth, Cookies Jar, 429 Rate Limits, 422 Validation & CRUD.",
+      "isLocalOnly": true,
+      "createdAt": "2026-10-21T19:30:00.000Z",
+      "updatedAt": "2026-10-21T19:30:00.000Z",
+      "steps": [
+        {
+          "stepId": "master-1",
+          "name": "1. GET Reflection & Headers",
+          "url": "http://localhost:4000/api/test/verbs/get-basic?client=putman&test=master",
+          "method": "GET",
+          "headers": { "X-Custom-Header": "PutmanMasterV1" },
+          "queryParams": {},
+          "bodyPayload": "",
+          "expectedStatusCode": 200,
+          "captureCookies": true,
+          "carryCookies": true,
+          "extractVariables": []
+        },
+        {
+          "stepId": "master-2",
+          "name": "2. GET Pagination & Filter",
+          "url": "http://localhost:4000/api/test/verbs/pagination?page=1&limit=2&category=hardware",
+          "method": "GET",
+          "headers": {},
+          "queryParams": {},
+          "bodyPayload": "",
+          "expectedStatusCode": 200,
+          "captureCookies": true,
+          "carryCookies": true,
+          "extractVariables": []
+        },
+        {
+          "stepId": "master-3",
+          "name": "3. POST Resource Creation (201)",
+          "url": "http://localhost:4000/api/test/verbs/post-create",
+          "method": "POST",
+          "headers": { "Content-Type": "application/json" },
+          "queryParams": {},
+          "bodyPayload": "{\n  \"title\": \"Mechanical Numpad\",\n  \"price\": 39.99,\n  \"category\": \"hardware\"\n}",
+          "expectedStatusCode": 201,
+          "captureCookies": true,
+          "carryCookies": true,
+          "extractVariables": [
+            { "varName": "newProductId", "jsonPath": "resourceId" }
+          ]
+        },
+        {
+          "stepId": "master-4",
+          "name": "4. Strict Full PUT Replacement",
+          "url": "http://localhost:4000/api/test/verbs/put/clean-replace",
+          "method": "PUT",
+          "headers": { "Content-Type": "application/json" },
+          "queryParams": {},
+          "bodyPayload": "{\n  \"id\": \"prod_keyboard\",\n  \"title\": \"Ergonomic Mechanical Keyboard v2\",\n  \"price\": 159.99,\n  \"category\": \"hardware\",\n  \"inStock\": true\n}",
+          "expectedStatusCode": 200,
+          "captureCookies": true,
+          "carryCookies": true,
+          "extractVariables": []
+        },
+        {
+          "stepId": "master-5",
+          "name": "5. Strict PUT Partial Rejection (400)",
+          "url": "http://localhost:4000/api/test/verbs/put/partial-strict",
+          "method": "PUT",
+          "headers": { "Content-Type": "application/json" },
+          "queryParams": {},
+          "bodyPayload": "{\n  \"title\": \"Incomplete Payload\"\n}",
+          "expectedStatusCode": 400,
+          "captureCookies": true,
+          "carryCookies": true,
+          "extractVariables": []
+        },
+        {
+          "stepId": "master-6",
+          "name": "6. Conditional PUT via ETag",
+          "url": "http://localhost:4000/api/test/verbs/put/conditional/doc_1",
+          "method": "PUT",
+          "headers": {
+            "Content-Type": "application/json",
+            "If-Match": "\"v1.0\""
+          },
+          "queryParams": {},
+          "bodyPayload": "{\n  \"content\": \"Revision updated via optimistic locking\"\n}",
+          "expectedStatusCode": 200,
+          "captureCookies": true,
+          "carryCookies": true,
+          "extractVariables": []
+        },
+        {
+          "stepId": "master-7",
+          "name": "7. Empty Body PUT (204 No Content)",
+          "url": "http://localhost:4000/api/test/verbs/put/empty-body",
+          "method": "PUT",
+          "headers": {},
+          "queryParams": {},
+          "bodyPayload": "",
+          "expectedStatusCode": 204,
+          "captureCookies": true,
+          "carryCookies": true,
+          "extractVariables": []
+        },
+        {
+          "stepId": "master-8",
+          "name": "8. HEAD Headers-Only Validation",
+          "url": "http://localhost:4000/api/test/verbs/head/headers-only",
+          "method": "HEAD",
+          "headers": {},
+          "queryParams": {},
+          "bodyPayload": "",
+          "expectedStatusCode": 200,
+          "captureCookies": true,
+          "carryCookies": true,
+          "extractVariables": []
+        },
+        {
+          "stepId": "master-9",
+          "name": "9. 10-Level Deep JSON Extraction",
+          "url": "http://localhost:4000/api/test/body/json-deeply-nested",
+          "method": "POST",
+          "headers": { "Content-Type": "application/json" },
+          "queryParams": {},
+          "bodyPayload": "{\n  \"user\": {\n    \"profile\": {\n      \"settings\": {\n        \"notifications\": {\n          \"channels\": {\n            \"email\": {\n              \"frequency\": {\n                \"daily\": {\n                  \"preferredTime\": \"08:00 UTC\"\n                }\n              }\n            }\n          }\n        }\n      }\n    }\n  }\n}",
+          "expectedStatusCode": 200,
+          "captureCookies": true,
+          "carryCookies": true,
+          "extractVariables": [
+            { "varName": "deepTime", "jsonPath": "extractedNestedValue" }
+          ]
+        },
+        {
+          "stepId": "master-10",
+          "name": "10. Unicode & Emoji Integrity",
+          "url": "http://localhost:4000/api/test/body/json-unicode-emojis",
+          "method": "POST",
+          "headers": { "Content-Type": "application/json" },
+          "queryParams": {},
+          "bodyPayload": "{\n  \"emojis\": \"🚀 💡 🔥 ✨ 💻\",\n  \"japanese\": \"こんにちは世界\",\n  \"arabic\": \"مرحبا بالعالم\"\n}",
+          "expectedStatusCode": 200,
+          "captureCookies": true,
+          "carryCookies": true,
+          "extractVariables": []
+        },
+        {
+          "stepId": "master-11",
+          "name": "11. Form URL-Encoded Post",
+          "url": "http://localhost:4000/api/test/body/form-urlencoded",
+          "method": "POST",
+          "headers": { "Content-Type": "application/x-www-form-urlencoded" },
+          "queryParams": {},
+          "bodyPayload": "username=johndoe&grant_type=password",
+          "expectedStatusCode": 200,
+          "captureCookies": true,
+          "carryCookies": true,
+          "extractVariables": []
+        },
+        {
+          "stepId": "master-12",
+          "name": "12. JWT Login (Extract Token)",
+          "url": "http://localhost:4000/api/test/auth/login",
+          "method": "POST",
+          "headers": { "Content-Type": "application/json" },
+          "queryParams": {},
+          "bodyPayload": "{\n  \"email\": \"alex@putman.dev\",\n  \"password\": \"password123\"\n}",
+          "expectedStatusCode": 200,
+          "captureCookies": true,
+          "carryCookies": true,
+          "extractVariables": [
+            { "varName": "jwtBearerToken", "jsonPath": "token" },
+            { "varName": "authedUserId", "jsonPath": "user.id" }
+          ]
+        },
+        {
+          "stepId": "master-13",
+          "name": "13. Bearer JWT Protected Route",
+          "url": "http://localhost:4000/api/test/auth/bearer-protected",
+          "method": "GET",
+          "headers": {
+            "Authorization": "Bearer {{jwtBearerToken}}"
+          },
+          "queryParams": {},
+          "bodyPayload": "",
+          "expectedStatusCode": 200,
+          "captureCookies": true,
+          "carryCookies": true,
+          "extractVariables": []
+        },
+        {
+          "stepId": "master-14",
+          "name": "14. HTTP Basic Authentication",
+          "url": "http://localhost:4000/api/test/auth/basic",
+          "method": "GET",
+          "headers": {
+            "Authorization": "Basic cHV0bWFuX2FkbWluOnNlY3JldF9wYXNzXzIwMjY="
+          },
+          "queryParams": {},
+          "bodyPayload": "",
+          "expectedStatusCode": 200,
+          "captureCookies": true,
+          "carryCookies": true,
+          "extractVariables": []
+        },
+        {
+          "stepId": "master-15",
+          "name": "15. API Key in Custom Header",
+          "url": "http://localhost:4000/api/test/auth/api-key-header",
+          "method": "GET",
+          "headers": {
+            "X-Api-Key": "putman_live_key_999"
+          },
+          "queryParams": {},
+          "bodyPayload": "",
+          "expectedStatusCode": 200,
+          "captureCookies": true,
+          "carryCookies": true,
+          "extractVariables": []
+        },
+        {
+          "stepId": "master-16",
+          "name": "16. API Key in Query Param",
+          "url": "http://localhost:4000/api/test/auth/api-key-query?apiKey=putman_query_key_123",
+          "method": "GET",
+          "headers": {},
+          "queryParams": {},
+          "bodyPayload": "",
+          "expectedStatusCode": 200,
+          "captureCookies": true,
+          "carryCookies": true,
+          "extractVariables": []
+        },
+        {
+          "stepId": "master-17",
+          "name": "17. Issue Multiple Cookies (Set-Cookie)",
+          "url": "http://localhost:4000/api/test/cookies/set-multiple",
+          "method": "GET",
+          "headers": {},
+          "queryParams": {},
+          "bodyPayload": "",
+          "expectedStatusCode": 200,
+          "captureCookies": true,
+          "carryCookies": true,
+          "extractVariables": []
+        },
+        {
+          "stepId": "master-18",
+          "name": "18. Validate Cookie Jar Carry-Forward",
+          "url": "http://localhost:4000/api/test/cookies/validate-jar",
+          "method": "POST",
+          "headers": {},
+          "queryParams": {},
+          "bodyPayload": "",
+          "expectedStatusCode": 200,
+          "captureCookies": true,
+          "carryCookies": true,
+          "extractVariables": []
+        },
+        {
+          "stepId": "master-19",
+          "name": "19. Stateful Cookie Counter",
+          "url": "http://localhost:4000/api/test/cookies/counter",
+          "method": "GET",
+          "headers": {},
+          "queryParams": {},
+          "bodyPayload": "",
+          "expectedStatusCode": 200,
+          "captureCookies": true,
+          "carryCookies": true,
+          "extractVariables": []
+        },
+        {
+          "stepId": "master-20",
+          "name": "20. 429 Rate Limit (Retry-After Test)",
+          "url": "http://localhost:4000/api/test/status/429-rate-limit",
+          "method": "GET",
+          "headers": {},
+          "queryParams": {},
+          "bodyPayload": "",
+          "expectedStatusCode": 429,
+          "captureCookies": true,
+          "carryCookies": true,
+          "extractVariables": []
+        },
+        {
+          "stepId": "master-21",
+          "name": "21. 422 Unprocessable Entity",
+          "url": "http://localhost:4000/api/test/status/422-validation-error",
+          "method": "POST",
+          "headers": { "Content-Type": "application/json" },
+          "queryParams": {},
+          "bodyPayload": "{\n  \"email\": \"invalid-format\"\n}",
+          "expectedStatusCode": 422,
+          "captureCookies": true,
+          "carryCookies": true,
+          "extractVariables": []
+        },
+        {
+          "stepId": "master-22",
+          "name": "22. Artificial Latency Simulation",
+          "url": "http://localhost:4000/api/test/status/latency?delay=250",
+          "method": "GET",
+          "headers": {},
+          "queryParams": {},
+          "bodyPayload": "",
+          "expectedStatusCode": 200,
+          "captureCookies": true,
+          "carryCookies": true,
+          "extractVariables": []
+        },
+        {
+          "stepId": "master-23",
+          "name": "23. Create CRUD Entity (POST 201)",
+          "url": "http://localhost:4000/api/test/journeys/crud/items",
+          "method": "POST",
+          "headers": { "Content-Type": "application/json" },
+          "queryParams": {},
+          "bodyPayload": "{\n  \"title\": \"Putman Master Item\",\n  \"description\": \"Comprehensive full-suite verification\",\n  \"priority\": \"high\"\n}",
+          "expectedStatusCode": 201,
+          "captureCookies": true,
+          "carryCookies": true,
+          "extractVariables": [
+            { "varName": "masterCrudId", "jsonPath": "item.id" }
+          ]
+        },
+        {
+          "stepId": "master-24",
+          "name": "24. Read Entity with Dynamic ID",
+          "url": "http://localhost:4000/api/test/journeys/crud/items/{{masterCrudId}}",
+          "method": "GET",
+          "headers": {},
+          "queryParams": {},
+          "bodyPayload": "",
+          "expectedStatusCode": 200,
+          "captureCookies": true,
+          "carryCookies": true,
+          "extractVariables": []
+        },
+        {
+          "stepId": "master-25",
+          "name": "25. Delete Entity (204 No Content)",
+          "url": "http://localhost:4000/api/test/journeys/crud/items/{{masterCrudId}}",
+          "method": "DELETE",
+          "headers": {},
+          "queryParams": {},
+          "bodyPayload": "",
+          "expectedStatusCode": 204,
+          "captureCookies": true,
+          "carryCookies": true,
+          "extractVariables": []
+        }
+      ]
+    },
+    {
+      "_id": "testlab-flow-ecommerce-journey",
+      "userId": "guest-local-user",
+      "name": "TestLab: E-Commerce Complete Chained Journey",
+      "description": "Validates multi-step variable chaining (Auth token, Cart ID, Order ID), Bearer JWT headers, and strict full-payload PUT replacement.",
+      "isLocalOnly": true,
+      "createdAt": "2026-10-21T18:50:00.000Z",
+      "updatedAt": "2026-10-21T18:50:00.000Z",
+      "steps": [
+        {
+          "stepId": "step-ecom-1",
+          "name": "1. User Login (Obtain Bearer JWT)",
+          "url": "http://localhost:4000/api/test/journeys/ecommerce/login",
+          "method": "POST",
+          "headers": {
+            "Content-Type": "application/json"
+          },
+          "queryParams": {},
+          "bodyPayload": "{\n  \"email\": \"alex@putman.dev\",\n  \"password\": \"password123\"\n}",
+          "expectedStatusCode": 200,
+          "captureCookies": true,
+          "carryCookies": true,
+          "extractVariables": [
+            {
+              "varName": "authToken",
+              "jsonPath": "token"
+            },
+            {
+              "varName": "currentUserId",
+              "jsonPath": "userId"
+            }
+          ]
+        },
+        {
+          "stepId": "step-ecom-2",
+          "name": "2. Browse Product Catalog",
+          "url": "http://localhost:4000/api/test/journeys/ecommerce/products",
+          "method": "GET",
+          "headers": {
+            "Authorization": "Bearer {{authToken}}"
+          },
+          "queryParams": {},
+          "bodyPayload": "",
+          "expectedStatusCode": 200,
+          "captureCookies": true,
+          "carryCookies": true,
+          "extractVariables": []
+        },
+        {
+          "stepId": "step-ecom-3",
+          "name": "3. Add Items & Initialize Cart",
+          "url": "http://localhost:4000/api/test/journeys/ecommerce/cart",
+          "method": "POST",
+          "headers": {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer {{authToken}}"
+          },
+          "queryParams": {},
+          "bodyPayload": "{\n  \"items\": [\n    {\n      \"productId\": \"prod_keyboard\",\n      \"quantity\": 2\n    }\n  ]\n}",
+          "expectedStatusCode": 201,
+          "captureCookies": true,
+          "carryCookies": true,
+          "extractVariables": [
+            {
+              "varName": "activeCartId",
+              "jsonPath": "cartId"
+            }
+          ]
+        },
+        {
+          "stepId": "step-ecom-4",
+          "name": "4. Strict Full PUT Shipping Address",
+          "url": "http://localhost:4000/api/test/journeys/ecommerce/cart/{{activeCartId}}/shipping",
+          "method": "PUT",
+          "headers": {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer {{authToken}}"
+          },
+          "queryParams": {},
+          "bodyPayload": "{\n  \"fullName\": \"Alex Rivera\",\n  \"addressLine1\": \"100 Innovation Way\",\n  \"city\": \"San Francisco\",\n  \"postalCode\": \"94105\",\n  \"country\": \"USA\",\n  \"shippingMethod\": \"express\"\n}",
+          "expectedStatusCode": 200,
+          "captureCookies": true,
+          "carryCookies": true,
+          "extractVariables": []
+        },
+        {
+          "stepId": "step-ecom-5",
+          "name": "5. Checkout & Finalize Order",
+          "url": "http://localhost:4000/api/test/journeys/ecommerce/checkout",
+          "method": "POST",
+          "headers": {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer {{authToken}}"
+          },
+          "queryParams": {},
+          "bodyPayload": "{\n  \"cartId\": \"{{activeCartId}}\",\n  \"paymentMethod\": \"credit_card\"\n}",
+          "expectedStatusCode": 201,
+          "captureCookies": true,
+          "carryCookies": true,
+          "extractVariables": [
+            {
+              "varName": "finalOrderId",
+              "jsonPath": "orderId"
+            }
+          ]
+        },
+        {
+          "stepId": "step-ecom-6",
+          "name": "6. Query & Verify Placed Order",
+          "url": "http://localhost:4000/api/test/journeys/ecommerce/orders/{{finalOrderId}}",
+          "method": "GET",
+          "headers": {
+            "Authorization": "Bearer {{authToken}}"
+          },
+          "queryParams": {},
+          "bodyPayload": "",
+          "expectedStatusCode": 200,
+          "captureCookies": true,
+          "carryCookies": true,
+          "extractVariables": []
+        }
+      ]
+    },
+    {
+      "_id": "testlab-flow-cookie-session-banking",
+      "userId": "guest-local-user",
+      "name": "TestLab: Stateful Cookie Jar & Anti-CSRF Banking Flow",
+      "description": "Verifies Putman's automatic Cookie Jar carry-forward across requests and validates X-CSRF-Token headers against session cookies.",
+      "isLocalOnly": true,
+      "createdAt": "2026-10-21T18:50:00.000Z",
+      "updatedAt": "2026-10-21T18:50:00.000Z",
+      "steps": [
+        {
+          "stepId": "step-bank-1",
+          "name": "1. Session Login (Sets HttpOnly Session & CSRF Cookies)",
+          "url": "http://localhost:4000/api/test/journeys/session/login",
+          "method": "POST",
+          "headers": {
+            "Content-Type": "application/json"
+          },
+          "queryParams": {},
+          "bodyPayload": "{\n  \"email\": \"sam@putman.dev\",\n  \"password\": \"secret456\"\n}",
+          "expectedStatusCode": 200,
+          "captureCookies": true,
+          "carryCookies": true,
+          "extractVariables": [
+            {
+              "varName": "bankingCsrfToken",
+              "jsonPath": "csrfToken"
+            }
+          ]
+        },
+        {
+          "stepId": "step-bank-2",
+          "name": "2. Read Profile (Authenticated Exclusively via Cookie Jar)",
+          "url": "http://localhost:4000/api/test/journeys/session/profile",
+          "method": "GET",
+          "headers": {},
+          "queryParams": {},
+          "bodyPayload": "",
+          "expectedStatusCode": 200,
+          "captureCookies": true,
+          "carryCookies": true,
+          "extractVariables": []
+        },
+        {
+          "stepId": "step-bank-3",
+          "name": "3. Funds Transfer (Validates Cookie + X-CSRF-Token)",
+          "url": "http://localhost:4000/api/test/journeys/session/transfer",
+          "method": "POST",
+          "headers": {
+            "Content-Type": "application/json",
+            "X-CSRF-Token": "{{bankingCsrfToken}}"
+          },
+          "queryParams": {},
+          "bodyPayload": "{\n  \"recipientEmail\": \"alex@putman.dev\",\n  \"amount\": 25.0\n}",
+          "expectedStatusCode": 200,
+          "captureCookies": true,
+          "carryCookies": true,
+          "extractVariables": [
+            {
+              "varName": "transferTxnId",
+              "jsonPath": "transactionId"
+            }
+          ]
+        },
+        {
+          "stepId": "step-bank-4",
+          "name": "4. Session Logout & Revoke Cookies",
+          "url": "http://localhost:4000/api/test/journeys/session/logout",
+          "method": "POST",
+          "headers": {},
+          "queryParams": {},
+          "bodyPayload": "",
+          "expectedStatusCode": 200,
+          "captureCookies": true,
+          "carryCookies": true,
+          "extractVariables": []
+        }
+      ]
+    },
+    {
+      "_id": "testlab-flow-crud-lifecycle",
+      "userId": "guest-local-user",
+      "name": "TestLab: Full Entity CRUD Lifecycle (POST -> GET -> PUT -> PATCH -> DELETE)",
+      "description": "Validates 201 Created entity generation, clean full PUT replacement, JSON merge PATCH, 204 No Content DELETE, and 404 confirmation.",
+      "isLocalOnly": true,
+      "createdAt": "2026-10-21T18:50:00.000Z",
+      "updatedAt": "2026-10-21T18:50:00.000Z",
+      "steps": [
+        {
+          "stepId": "step-crud-1",
+          "name": "1. Create Entity (POST 201 Created)",
+          "url": "http://localhost:4000/api/test/journeys/crud/items",
+          "method": "POST",
+          "headers": {
+            "Content-Type": "application/json"
+          },
+          "queryParams": {},
+          "bodyPayload": "{\n  \"title\": \"Mission Deployment Task\",\n  \"description\": \"Verify production readiness with Putman\",\n  \"priority\": \"high\"\n}",
+          "expectedStatusCode": 201,
+          "captureCookies": true,
+          "carryCookies": true,
+          "extractVariables": [
+            {
+              "varName": "createdItemId",
+              "jsonPath": "item.id"
+            }
+          ]
+        },
+        {
+          "stepId": "step-crud-2",
+          "name": "2. Read Entity (GET 200 OK)",
+          "url": "http://localhost:4000/api/test/journeys/crud/items/{{createdItemId}}",
+          "method": "GET",
+          "headers": {},
+          "queryParams": {},
+          "bodyPayload": "",
+          "expectedStatusCode": 200,
+          "captureCookies": true,
+          "carryCookies": true,
+          "extractVariables": []
+        },
+        {
+          "stepId": "step-crud-3",
+          "name": "3. Clean Full PUT Replacement (200 OK)",
+          "url": "http://localhost:4000/api/test/journeys/crud/items/{{createdItemId}}",
+          "method": "PUT",
+          "headers": {
+            "Content-Type": "application/json"
+          },
+          "queryParams": {},
+          "bodyPayload": "{\n  \"title\": \"Mission Deployment Task - Executed\",\n  \"description\": \"All verification checks passed\",\n  \"priority\": \"critical\",\n  \"status\": \"completed\"\n}",
+          "expectedStatusCode": 200,
+          "captureCookies": true,
+          "carryCookies": true,
+          "extractVariables": []
+        },
+        {
+          "stepId": "step-crud-4",
+          "name": "4. Partial Modification via PATCH (200 OK)",
+          "url": "http://localhost:4000/api/test/journeys/crud/items/{{createdItemId}}",
+          "method": "PATCH",
+          "headers": {
+            "Content-Type": "application/json"
+          },
+          "queryParams": {},
+          "bodyPayload": "{\n  \"priority\": \"resolved\"\n}",
+          "expectedStatusCode": 200,
+          "captureCookies": true,
+          "carryCookies": true,
+          "extractVariables": []
+        },
+        {
+          "stepId": "step-crud-5",
+          "name": "5. Delete Entity (204 No Content)",
+          "url": "http://localhost:4000/api/test/journeys/crud/items/{{createdItemId}}",
+          "method": "DELETE",
+          "headers": {},
+          "queryParams": {},
+          "bodyPayload": "",
+          "expectedStatusCode": 204,
+          "captureCookies": true,
+          "carryCookies": true,
+          "extractVariables": []
+        },
+        {
+          "stepId": "step-crud-6",
+          "name": "6. Confirm Deletion (404 Not Found)",
+          "url": "http://localhost:4000/api/test/journeys/crud/items/{{createdItemId}}",
+          "method": "GET",
+          "headers": {},
+          "queryParams": {},
+          "bodyPayload": "",
+          "expectedStatusCode": 404,
+          "captureCookies": true,
+          "carryCookies": true,
+          "extractVariables": []
+        }
+      ]
+    },
+    {
+      "_id": "testlab-flow-verbs-and-put-edgecases",
+      "userId": "guest-local-user",
+      "name": "TestLab: HTTP Verbs & Strict PUT Edge Cases",
+      "description": "Tests clean replacement PUT, partial PUT 400 rejection handling, optimistic concurrency ETags (If-Match), and empty body PUT (204).",
+      "isLocalOnly": true,
+      "createdAt": "2026-10-21T18:50:00.000Z",
+      "updatedAt": "2026-10-21T18:50:00.000Z",
+      "steps": [
+        {
+          "stepId": "step-verbs-1",
+          "name": "1. GET with Query & Custom Header Reflection",
+          "url": "http://localhost:4000/api/test/verbs/get-basic?client=putman&env=local",
+          "method": "GET",
+          "headers": {
+            "X-Custom-Header": "PutmanRunnerV1"
+          },
+          "queryParams": {},
+          "bodyPayload": "",
+          "expectedStatusCode": 200,
+          "captureCookies": true,
+          "carryCookies": true,
+          "extractVariables": []
+        },
+        {
+          "stepId": "step-verbs-2",
+          "name": "2. Clean Idempotent PUT Replacement",
+          "url": "http://localhost:4000/api/test/verbs/put/clean-replace",
+          "method": "PUT",
+          "headers": {
+            "Content-Type": "application/json"
+          },
+          "queryParams": {},
+          "bodyPayload": "{\n  \"id\": \"prod_keyboard\",\n  \"title\": \"Ergonomic Mechanical Keyboard v2\",\n  \"price\": 159.99,\n  \"category\": \"hardware\",\n  \"inStock\": true\n}",
+          "expectedStatusCode": 200,
+          "captureCookies": true,
+          "carryCookies": true,
+          "extractVariables": []
+        },
+        {
+          "stepId": "step-verbs-3",
+          "name": "3. Strict PUT Partial Rejection (Expect 400 Bad Request)",
+          "url": "http://localhost:4000/api/test/verbs/put/partial-strict",
+          "method": "PUT",
+          "headers": {
+            "Content-Type": "application/json"
+          },
+          "queryParams": {},
+          "bodyPayload": "{\n  \"title\": \"Incomplete Payload\"\n}",
+          "expectedStatusCode": 400,
+          "captureCookies": true,
+          "carryCookies": true,
+          "extractVariables": []
+        },
+        {
+          "stepId": "step-verbs-4",
+          "name": "4. Conditional PUT with ETag Concurrency Check",
+          "url": "http://localhost:4000/api/test/verbs/put/conditional/doc_1",
+          "method": "PUT",
+          "headers": {
+            "Content-Type": "application/json",
+            "If-Match": "\"v1.0\""
+          },
+          "queryParams": {},
+          "bodyPayload": "{\n  \"content\": \"Revision updated via Putman conditional optimistic lock\"\n}",
+          "expectedStatusCode": 200,
+          "captureCookies": true,
+          "carryCookies": true,
+          "extractVariables": []
+        },
+        {
+          "stepId": "step-verbs-5",
+          "name": "5. Empty Body PUT State Transition (204 No Content)",
+          "url": "http://localhost:4000/api/test/verbs/put/empty-body",
+          "method": "PUT",
+          "headers": {},
+          "queryParams": {},
+          "bodyPayload": "",
+          "expectedStatusCode": 204,
+          "captureCookies": true,
+          "carryCookies": true,
+          "extractVariables": []
+        }
+      ]
+    },
+    {
+      "_id": "testlab-flow-status-codes-and-edgecases",
+      "userId": "guest-local-user",
+      "name": "TestLab: Status Codes, Rate Limits & Payloads",
+      "description": "Tests 429 rate limit with Retry-After header, 422 schema validation, 10-level deep JSON object traversal, and Unicode emojis.",
+      "isLocalOnly": true,
+      "createdAt": "2026-10-21T18:50:00.000Z",
+      "updatedAt": "2026-10-21T18:50:00.000Z",
+      "steps": [
+        {
+          "stepId": "step-edge-1",
+          "name": "1. 429 Rate Limit (Retry-After Header Test)",
+          "url": "http://localhost:4000/api/test/status/429-rate-limit",
+          "method": "GET",
+          "headers": {},
+          "queryParams": {},
+          "bodyPayload": "",
+          "expectedStatusCode": 429,
+          "captureCookies": true,
+          "carryCookies": true,
+          "extractVariables": []
+        },
+        {
+          "stepId": "step-edge-2",
+          "name": "2. 422 Unprocessable Entity (Schema Errors)",
+          "url": "http://localhost:4000/api/test/status/422-validation-error",
+          "method": "POST",
+          "headers": {
+            "Content-Type": "application/json"
+          },
+          "queryParams": {},
+          "bodyPayload": "{\n  \"email\": \"invalid-format\"\n}",
+          "expectedStatusCode": 422,
+          "captureCookies": true,
+          "carryCookies": true,
+          "extractVariables": []
+        },
+        {
+          "stepId": "step-edge-3",
+          "name": "3. 10-Level Deeply Nested JSON Object",
+          "url": "http://localhost:4000/api/test/body/json-deeply-nested",
+          "method": "POST",
+          "headers": {
+            "Content-Type": "application/json"
+          },
+          "queryParams": {},
+          "bodyPayload": "{\n  \"user\": {\n    \"profile\": {\n      \"settings\": {\n        \"notifications\": {\n          \"channels\": {\n            \"email\": {\n              \"frequency\": {\n                \"daily\": {\n                  \"preferredTime\": \"09:00 UTC\"\n                }\n              }\n            }\n          }\n        }\n      }\n    }\n  }\n}",
+          "expectedStatusCode": 200,
+          "captureCookies": true,
+          "carryCookies": true,
+          "extractVariables": [
+            {
+              "varName": "deepTime",
+              "jsonPath": "extractedNestedValue"
+            }
+          ]
+        },
+        {
+          "stepId": "step-edge-4",
+          "name": "4. Unicode & Emoji Payload Integrity",
+          "url": "http://localhost:4000/api/test/body/json-unicode-emojis",
+          "method": "POST",
+          "headers": {
+            "Content-Type": "application/json"
+          },
+          "queryParams": {},
+          "bodyPayload": "{\n  \"emojis\": \"🚀 💡 🔥 ✨ 💻\",\n  \"japanese\": \"こんにちは世界\",\n  \"arabic\": \"مرحبا بالعالم\"\n}",
+          "expectedStatusCode": 200,
+          "captureCookies": true,
+          "carryCookies": true,
+          "extractVariables": []
+        }
+      ]
+    }
+  ]
+}

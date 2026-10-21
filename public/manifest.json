@@ -1,0 +1,23 @@
+{
+  "name": "Putman - Open Source API Workflow Runner",
+  "short_name": "Putman",
+  "description": "The lightweight, local-first API workflow runner. Chain sequential HTTP requests, extract dynamic variables, and test multi-step backend journeys with zero setup.",
+  "start_url": "/workflows",
+  "display": "standalone",
+  "background_color": "#09090b",
+  "theme_color": "#FF6C37",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    }
+  ],
+  "categories": ["developer tools", "productivity", "utilities"]
+}
