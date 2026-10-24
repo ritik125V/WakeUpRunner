@@ -59,6 +59,14 @@ Open [http://localhost:3000](http://localhost:3000) with your browser.
 
 ---
 
+## 📚 Core Architecture, Cookie Engine & Security Documentation
+
+For detailed architectural and security specifications, see:
+- 📖 [**API Engine Architecture, Cookie Management & Security Specification**](docs/API_ENGINE_ARCHITECTURE_AND_SECURITY.md) — Exhaustive deep dive on dual-path routing, loopback direct browser execution, stateful cookie carry-forward, and zero-leakage token guarantees.
+- 🛡️ [**Agent Instructions & Guardrail Rules**](AGENT_INSTRUCTIONS.md) — Mandatory policies and protected core boundaries for AI coding agents and contributors.
+
+---
+
 ## 🧪 Architecture & Quality Verification Benchmark
 
 To verify architectural health, monolith deconstruction, and feature preservation across releases, run:

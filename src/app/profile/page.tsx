@@ -3,39 +3,29 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { motion, AnimatePresence } from 'framer-motion';
 import {
   User as UserIcon,
   HardDrive,
-  Layers,
   Trash2,
   Save,
   Check,
   Download,
   Upload,
-  Play,
   ArrowLeft,
   ChevronRight,
-  RefreshCw,
-  Plus,
-  Clock,
-  Sparkles,
-  AlertTriangle,
   Palette,
   Code,
+  Database,
 } from 'lucide-react';
 import { useTheme } from '@/core/theme/themeContext';
 import {
-  getLocalWorkflows,
-  deleteLocalWorkflow,
-  clearAllLocalWorkflows,
+  clearEntireLocalStorage,
   exportLocalWorkflowsJSON,
   importLocalWorkflowsJSON,
   getLocalUsername,
   setLocalUsername,
   getStorageUsageStats,
 } from '@/lib/workflowLocalStorage';
-import { WorkflowData } from '@/lib/api';
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -46,30 +36,32 @@ export default function ProfilePage() {
   const [isSavingName, setIsSavingName] = useState<boolean>(false);
   const [nameSaveMsg, setNameSaveMsg] = useState<string | null>(null);
 
-  // Storage & Workflows State
-  const [workflows, setWorkflows] = useState<WorkflowData[]>([]);
+  // Storage Metrics & Status
   const [stats, setStats] = useState({
     workflowsCount: 0,
     stepsCount: 0,
+    dataItemsCount: 0,
     runsCount: 0,
+    variablesCount: 0,
+    cookiesCount: 0,
     bytesUsed: 0,
   });
+
   const [importStatus, setImportStatus] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [copiedExport, setCopiedExport] = useState<boolean>(false);
 
   const loadData = () => {
     const currentName = getLocalUsername();
     setUsernameState(currentName);
-
-    const wfs = getLocalWorkflows();
-    setWorkflows(wfs);
-
     const usage = getStorageUsageStats();
     setStats(usage);
   };
 
   useEffect(() => {
     loadData();
+    const handleStorageChange = () => loadData();
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
   const handleSaveUsername = (e: React.FormEvent) => {
@@ -87,21 +79,14 @@ export default function ProfilePage() {
     }, 2500);
   };
 
-  const handleDeleteWorkflow = (id: string, name: string) => {
-    if (confirm(`Are you sure you want to delete workflow "${name}"?`)) {
-      deleteLocalWorkflow(id);
-      loadData();
-    }
-  };
-
+  // Master wipe of local storage
   const handleClearAllData = () => {
     if (
       confirm(
-        'Are you sure you want to clear all data? This will permanently delete all registered workflows and execution run histories from your browser.'
+        'Are you sure you want to clear ALL LocalStorage data? This permanently removes all workflows, decoupled carried data, variables, cookies, and telemetry logs.'
       )
     ) {
-      clearAllLocalWorkflows();
-      localStorage.removeItem('putman_has_started');
+      clearEntireLocalStorage();
       loadData();
     }
   };
@@ -149,19 +134,6 @@ export default function ProfilePage() {
     e.target.value = '';
   };
 
-  const getMethodBadgeClass = (method?: string) => {
-    switch (method?.toUpperCase()) {
-      case 'POST':
-        return 'bg-amber-950/60 text-amber-300';
-      case 'PUT':
-        return 'bg-blue-950/60 text-blue-300';
-      case 'DELETE':
-        return 'bg-rose-950/60 text-rose-300';
-      default:
-        return 'bg-emerald-950/60 text-emerald-300';
-    }
-  };
-
   return (
     <div
       className="min-h-screen px-4 sm:px-8 py-6 font-sans transition-colors duration-200"
@@ -170,10 +142,10 @@ export default function ProfilePage() {
         color: 'var(--color-text-primary, #f5f0e8)',
       }}
     >
-      <div className="max-w-4xl mx-auto space-y-8">
+      <div className="max-w-4xl mx-auto space-y-6">
         
         {/* Top Header */}
-        <div className="flex items-center justify-between pb-4 border-none">
+        <div className="flex items-center justify-between pb-2 border-none">
           <div className="flex items-center gap-3">
             <Link
               href="/workflows"
@@ -191,29 +163,31 @@ export default function ProfilePage() {
                 </span>
               </h1>
               <p className="text-xs text-neutral-400 mt-0.5">
-                Manage your browser-saved workflows and local storage telemetry
+                Manage your browser-saved workflows, decoupled carried data, and telemetry
               </p>
             </div>
           </div>
 
-          <Link
-            href="/workflows"
-            className="px-3.5 py-1.5 bg-[#1a1a1e] hover:bg-[#242429] text-xs font-semibold text-neutral-200 hover:text-white rounded-md transition-colors"
-          >
-            Open Workflows →
-          </Link>
+          <div className="flex items-center gap-2">
+            <Link
+              href="/workflows"
+              className="px-3.5 py-1.5 bg-[#1a1a1e] hover:bg-[#242429] text-xs font-semibold text-neutral-200 hover:text-white rounded-lg transition-colors"
+            >
+              Workflows
+            </Link>
+          </div>
         </div>
 
         {/* Section 1: Username & Identity Settings */}
-        <div className="p-6 bg-[#121214] rounded-xl space-y-4 border-none shadow-md">
+        <div className="p-5 bg-[#121214] rounded-xl space-y-3 border-none shadow-md">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-full bg-[#1a1a1e] flex items-center justify-center text-neutral-200">
-                <UserIcon className="w-4 h-4" />
+              <div className="w-7 h-7 rounded-full bg-[#1a1a1e] flex items-center justify-center text-neutral-200">
+                <UserIcon className="w-3.5 h-3.5" />
               </div>
               <div>
-                <h3 className="text-sm font-bold text-white">Local Display Name</h3>
-                <p className="text-xs text-neutral-400">Custom name displayed across your local workspace</p>
+                <h3 className="text-xs font-bold text-white">Local Display Name</h3>
+                <p className="text-[11px] text-neutral-400">Custom name displayed across your local workspace</p>
               </div>
             </div>
 
@@ -224,7 +198,7 @@ export default function ProfilePage() {
             )}
           </div>
 
-          <form onSubmit={handleSaveUsername} className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-1">
+          <form onSubmit={handleSaveUsername} className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-0.5">
             <input
               type="text"
               required
@@ -244,19 +218,19 @@ export default function ProfilePage() {
           </form>
         </div>
 
-        {/* Section: Workspace Color Themes */}
-        <div className="p-6 bg-[#121214] rounded-xl space-y-4 border-none shadow-md">
+        {/* Section 2: Workspace Color Themes */}
+        <div className="p-5 bg-[#121214] rounded-xl space-y-3 border-none shadow-md">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-full bg-[#1a1a1e] flex items-center justify-center text-[#FF6C37]">
-              <Palette className="w-4 h-4" />
+            <div className="w-7 h-7 rounded-full bg-[#1a1a1e] flex items-center justify-center text-[#FF6C37]">
+              <Palette className="w-3.5 h-3.5" />
             </div>
             <div>
-              <h3 className="text-sm font-bold text-white">Color Themes</h3>
-              <p className="text-xs text-neutral-400">Choose your workspace theme (inspired by VS Code editors)</p>
+              <h3 className="text-xs font-bold text-white">Color Themes</h3>
+              <p className="text-[11px] text-neutral-400">Choose your workspace theme (inspired by VS Code editors)</p>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 pt-1">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5 pt-0.5">
             {availableThemes.map((t) => {
               const isSelected = t.id === themeId;
               return (
@@ -264,7 +238,7 @@ export default function ProfilePage() {
                   key={t.id}
                   type="button"
                   onClick={() => setTheme(t.id)}
-                  className={`p-3.5 rounded-xl text-left transition-all cursor-pointer flex items-center justify-between gap-3 border ${
+                  className={`p-3 rounded-xl text-left transition-all cursor-pointer flex items-center justify-between gap-3 border ${
                     isSelected
                       ? 'border-[#FF6C37] bg-[#1e1e24] shadow-md ring-1 ring-[#FF6C37]/40'
                       : 'border-transparent bg-[#161619] hover:bg-[#1a1a1e]'
@@ -272,11 +246,11 @@ export default function ProfilePage() {
                 >
                   <div className="flex items-center gap-3 min-w-0">
                     <div
-                      className="w-5 h-5 rounded-full border border-white/20 flex items-center justify-center shrink-0 shadow-sm"
+                      className="w-4 h-4 rounded-full border border-white/20 flex items-center justify-center shrink-0 shadow-sm"
                       style={{ backgroundColor: t.colors.canvas }}
                     >
                       <div
-                        className="w-2 h-2 rounded-full"
+                        className="w-1.5 h-1.5 rounded-full"
                         style={{ backgroundColor: t.colors.accentHighlight }}
                       />
                     </div>
@@ -297,22 +271,22 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        {/* Section: Request & Response Text Color */}
-        <div className="p-6 bg-[#121214] rounded-xl space-y-4 border-none shadow-md">
+        {/* Section 3: Request & Response Text Color */}
+        <div className="p-5 bg-[#121214] rounded-xl space-y-3 border-none shadow-md">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-full bg-[#1a1a1e] flex items-center justify-center text-amber-300">
-                <Code className="w-4 h-4" />
+              <div className="w-7 h-7 rounded-full bg-[#1a1a1e] flex items-center justify-center text-amber-300">
+                <Code className="w-3.5 h-3.5" />
               </div>
               <div>
-                <h3 className="text-sm font-bold text-white">Editor & Response Code Text Color</h3>
-                <p className="text-xs text-neutral-400">Customize the font color used in request payload editors and API response bodies</p>
+                <h3 className="text-xs font-bold text-white">Editor & Response Code Text Color</h3>
+                <p className="text-[11px] text-neutral-400">Customize the font color used in request payload editors and API response bodies</p>
               </div>
             </div>
 
             {/* Live Preview Pill */}
             <div
-              className="px-3 py-1.5 rounded-lg text-xs font-mono font-semibold border border-neutral-800 bg-[#09090b] self-start sm:self-auto"
+              className="px-3 py-1 rounded-lg text-xs font-mono font-semibold border border-neutral-800 bg-[#09090b] self-start sm:self-auto"
               style={{ color: editorTextColor }}
             >
               preview: &#123; &quot;status&quot;: &quot;ok&quot; &#125;
@@ -320,7 +294,7 @@ export default function ProfilePage() {
           </div>
 
           {/* Color Presets */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2.5 pt-1">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2 pt-0.5">
             {[
               { name: 'Crisp White', hex: '#f8fafc' },
               { name: 'Matrix Green', hex: '#4ade80' },
@@ -335,7 +309,7 @@ export default function ProfilePage() {
                   key={preset.hex}
                   type="button"
                   onClick={() => setEditorTextColor(preset.hex)}
-                  className={`p-2.5 rounded-xl text-left transition-all cursor-pointer flex flex-col justify-between gap-2 border ${
+                  className={`p-2 rounded-xl text-left transition-all cursor-pointer flex flex-col justify-between gap-1.5 border ${
                     isSelected
                       ? 'border-[#FF6C37] bg-[#1e1e24] shadow-md ring-1 ring-[#FF6C37]/40'
                       : 'border-transparent bg-[#161619] hover:bg-[#1a1a1e]'
@@ -343,84 +317,84 @@ export default function ProfilePage() {
                 >
                   <div className="flex items-center justify-between w-full">
                     <span
-                      className="w-4 h-4 rounded-full border border-white/20 inline-block shadow-sm"
+                      className="w-3.5 h-3.5 rounded-full border border-white/20 inline-block shadow-sm"
                       style={{ backgroundColor: preset.hex }}
                     />
                     {isSelected && <Check className="w-3 h-3 text-[#FF6C37]" />}
                   </div>
                   <div>
-                    <div className="text-[11px] font-bold text-white truncate">{preset.name}</div>
+                    <div className="text-[10px] font-bold text-white truncate">{preset.name}</div>
                     <div className="text-[9px] font-mono text-neutral-400">{preset.hex}</div>
                   </div>
                 </button>
               );
             })}
           </div>
-
-          {/* Custom Hex / Color Picker */}
-          <div className="flex flex-wrap items-center gap-3 pt-1">
-            <span className="text-xs text-neutral-400 font-medium">Custom color:</span>
-            <div className="flex items-center gap-2 bg-[#161619] px-3 py-1.5 rounded-lg border border-neutral-800">
-              <input
-                type="color"
-                value={editorTextColor}
-                onChange={(e) => setEditorTextColor(e.target.value)}
-                className="w-5 h-5 rounded cursor-pointer border-none bg-transparent"
-                title="Choose custom color"
-              />
-              <input
-                type="text"
-                value={editorTextColor}
-                onChange={(e) => setEditorTextColor(e.target.value)}
-                placeholder="#f8fafc"
-                className="bg-transparent text-xs font-mono text-white outline-none w-20"
-              />
-            </div>
-            <button
-              type="button"
-              onClick={() => setEditorTextColor('#f8fafc')}
-              className="text-xs text-neutral-400 hover:text-white underline cursor-pointer bg-transparent border-none"
-            >
-              Reset to Crisp White
-            </button>
-          </div>
         </div>
 
-        {/* Section 2: Browser Storage Telemetry */}
-        <div className="p-6 bg-[#121214] rounded-xl space-y-5 border-none shadow-md">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        {/* Section 4: EXPLORE YOUR DATA (Local Storage) */}
+        <div className="p-5 bg-[#121214] rounded-xl space-y-4 border border-neutral-850 shadow-md">
+          {/* Header Bar */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-neutral-850">
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-full bg-[#1a1a1e] flex items-center justify-center text-[#FF8A5C]">
-                <HardDrive className="w-4 h-4" />
+              <div className="w-7 h-7 rounded-full bg-[#1a1a1e] flex items-center justify-center text-[#FF8A5C]">
+                <HardDrive className="w-3.5 h-3.5" />
               </div>
               <div>
-                <h3 className="text-sm font-bold text-white">Data Saved in Browser</h3>
-                <p className="text-xs text-neutral-400">Private & local-first. Stored securely in your browser's LocalStorage</p>
+                <h3 className="text-xs font-bold text-white flex items-center gap-2 font-mono">
+                  <span>Explore Your Data</span>
+                  <span className="px-2 py-0.2 rounded text-[9px] font-mono bg-amber-950/60 text-amber-300 font-bold border border-amber-800/40">
+                    LOCAL STORAGE
+                  </span>
+                </h3>
+                <p className="text-[11px] text-neutral-400">
+                  Manage your browser-saved workflows, carried key-values, and cross-device sync
+                </p>
               </div>
             </div>
 
-            {/* Backup / Export Buttons */}
-            <div className="flex items-center gap-2">
-              <button
-                onClick={handleExportJSON}
-                className="px-3 py-1.5 bg-[#1a1a1e] hover:bg-[#242429] text-xs font-semibold text-neutral-200 hover:text-white rounded-md transition-colors flex items-center gap-1.5 cursor-pointer touch-press"
-                title="Download JSON backup"
+            {/* Quick Action Toolbar */}
+            <div className="flex items-center gap-2 flex-wrap">
+              <Link
+                href="/storage"
+                className="px-3 py-1 bg-[#FF6C37] hover:bg-[#FF8A5C] text-white text-[11px] font-bold rounded-md transition-all flex items-center gap-1.5 shadow-sm border-none shrink-0"
+                title="Click to explore your data in your local storage"
               >
-                <Download className="w-3.5 h-3.5" />
-                <span>{copiedExport ? 'Downloaded!' : 'Export JSON'}</span>
+                <HardDrive className="w-3 h-3" />
+                <span>Explore Your Data →</span>
+              </Link>
+
+              <button
+                type="button"
+                onClick={handleExportJSON}
+                className="px-2.5 py-1 bg-[#1a1a1e] hover:bg-[#242429] text-[11px] font-semibold text-neutral-200 hover:text-white rounded-md transition-colors flex items-center gap-1 cursor-pointer touch-press"
+                title="Download JSON backup of all workflows"
+              >
+                <Download className="w-3 h-3" />
+                <span>{copiedExport ? 'Downloaded' : 'Backup'}</span>
               </button>
 
-              <label className="px-3 py-1.5 bg-[#1a1a1e] hover:bg-[#242429] text-xs font-semibold text-neutral-200 hover:text-white rounded-md transition-colors flex items-center gap-1.5 cursor-pointer touch-press">
-                <Upload className="w-3.5 h-3.5" />
-                <span>Import JSON</span>
+              <label className="px-2.5 py-1 bg-[#1a1a1e] hover:bg-[#242429] text-[11px] font-semibold text-neutral-200 hover:text-white rounded-md transition-colors flex items-center gap-1 cursor-pointer touch-press">
+                <Upload className="w-3 h-3" />
+                <span>Restore</span>
                 <input type="file" accept=".json" onChange={handleImportJSON} className="hidden" />
               </label>
+
+              <button
+                type="button"
+                onClick={handleClearAllData}
+                className="px-2.5 py-1 bg-rose-950/50 hover:bg-rose-900/60 text-rose-300 text-[11px] font-bold rounded-md transition-colors flex items-center gap-1 cursor-pointer border border-rose-900/40"
+                title="Clear all browser local storage"
+              >
+                <Trash2 className="w-3 h-3 text-rose-400" />
+                <span>Clear All Storage</span>
+              </button>
             </div>
           </div>
 
           {importStatus && (
             <div
-              className={`p-3 rounded-lg text-xs font-mono ${
+              className={`p-2.5 rounded-lg text-xs font-mono ${
                 importStatus.type === 'success'
                   ? 'bg-emerald-950/60 text-emerald-300 border border-emerald-900/40'
                   : 'bg-rose-950/60 text-rose-300 border border-rose-900/40'
@@ -430,150 +404,59 @@ export default function ProfilePage() {
             </div>
           )}
 
-          {/* Metrics Grid */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <div className="bg-[#18181c] p-3.5 rounded-lg">
-              <div className="text-[10px] text-neutral-400 font-mono uppercase font-semibold">Registered Workflows</div>
-              <div className="text-xl font-bold text-white mt-1">{stats.workflowsCount}</div>
-            </div>
-
-            <div className="bg-[#18181c] p-3.5 rounded-lg">
-              <div className="text-[10px] text-neutral-400 font-mono uppercase font-semibold">Total API Steps</div>
-              <div className="text-xl font-bold text-white mt-1">{stats.stepsCount}</div>
-            </div>
-
-            <div className="bg-[#18181c] p-3.5 rounded-lg">
-              <div className="text-[10px] text-neutral-400 font-mono uppercase font-semibold">Saved Run Logs</div>
-              <div className="text-xl font-bold text-white mt-1">{stats.runsCount}</div>
-            </div>
-
-            <div className="bg-[#18181c] p-3.5 rounded-lg">
-              <div className="text-[10px] text-neutral-400 font-mono uppercase font-semibold">Storage Used</div>
-              <div className="text-xl font-bold text-white mt-1">{(stats.bytesUsed / 1024).toFixed(1)} KB</div>
-            </div>
-          </div>
-        </div>
-
-        {/* Section 3: Registered Workflows Management (Delete Option for anything in the datas) */}
-        <div className="p-6 bg-[#121214] rounded-xl space-y-4 border-none shadow-md">
-          <div className="flex items-center justify-between pb-2 border-b border-neutral-850">
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-full bg-[#1a1a1e] flex items-center justify-center text-sky-400">
-                <Layers className="w-4 h-4" />
-              </div>
-              <div>
-                <h3 className="text-sm font-bold text-white">Registered Workflows ({workflows.length})</h3>
-                <p className="text-xs text-neutral-400">View or delete individual workflows saved in your browser</p>
-              </div>
-            </div>
-
-            <Link
-              href="/workflows"
-              className="text-xs text-neutral-400 hover:text-white flex items-center gap-1 transition-colors"
-            >
-              <Plus className="w-3.5 h-3.5" /> Create New
-            </Link>
-          </div>
-
-          {workflows.length === 0 ? (
-            <div className="py-8 text-center text-xs text-neutral-500">
-              No registered workflows in browser storage.
-            </div>
-          ) : (
-            <div className="divide-y divide-neutral-900 overflow-hidden">
-              {workflows.map((wf) => (
-                <div
-                  key={wf._id}
-                  className="py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-[#161619] px-2 rounded-lg transition-colors group"
-                >
-                  <div className="min-w-0 space-y-1">
-                    <div className="flex items-center gap-2">
-                      <Link
-                        href={`/workflows/${wf._id}`}
-                        className="text-xs font-semibold text-white hover:text-[#FF8A5C] transition-colors truncate max-w-sm"
-                      >
-                        {wf.name}
-                      </Link>
-                      <span className="text-[10px] font-mono text-neutral-500">
-                        ({wf.steps?.length || 0} steps)
-                      </span>
-                    </div>
-
-                    {wf.description && (
-                      <p className="text-[11px] text-neutral-400 truncate max-w-md">{wf.description}</p>
-                    )}
-
-                    {/* Step Pipeline Preview */}
-                    {wf.steps && wf.steps.length > 0 && (
-                      <div className="flex items-center gap-1 flex-wrap pt-0.5">
-                        {wf.steps.slice(0, 4).map((s, idx) => (
-                          <span
-                            key={idx}
-                            className={`px-1.5 py-0.2 rounded text-[9px] font-mono font-semibold ${getMethodBadgeClass(
-                              s.method
-                            )}`}
-                          >
-                            {s.method}
-                          </span>
-                        ))}
-                        {wf.steps.length > 4 && (
-                          <span className="text-[9px] text-neutral-500 font-mono">
-                            +{wf.steps.length - 4}
-                          </span>
-                        )}
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="flex items-center gap-2 shrink-0">
-                    <Link
-                      href={`/workflows/${wf._id}/report`}
-                      className="px-2.5 py-1 bg-[#FF6C37] hover:bg-[#FF8A5C] text-white text-xs font-bold rounded-md transition-colors flex items-center gap-1 touch-press shadow-sm"
-                    >
-                      <Play className="w-3 h-3 fill-current text-white" /> Run
-                    </Link>
-
-                    <Link
-                      href={`/workflows/${wf._id}`}
-                      className="px-2.5 py-1 bg-[#1a1a1e] hover:bg-[#242429] text-neutral-300 hover:text-white text-xs font-semibold rounded-md transition-colors"
-                    >
-                      Edit
-                    </Link>
-
-                    <button
-                      onClick={() => handleDeleteWorkflow(wf._id, wf.name)}
-                      className="p-1.5 text-neutral-500 hover:text-red-400 hover:bg-[#242429] rounded transition-colors cursor-pointer"
-                      title="Delete this workflow from browser data"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
+          {/* Interactive "Explore Your Data" Card */}
+          <Link
+            href="/storage"
+            className="group block p-4 bg-gradient-to-r from-[#17171d] via-[#141418] to-[#121215] hover:from-[#1c1c24] hover:to-[#16161b] rounded-xl border border-neutral-800 hover:border-amber-500/40 transition-all shadow-sm cursor-pointer select-none"
+            title="Click to explore your data in your local storage"
+          >
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex items-center gap-3.5 min-w-0">
+                <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/25 group-hover:bg-amber-500/20 group-hover:border-amber-500/40 flex items-center justify-center text-amber-400 shrink-0 transition-colors">
+                  <Database className="w-5 h-5 text-amber-400" />
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Section 4: Clear All Data / Reset Storage */}
-        <div className="p-6 bg-[#161214] rounded-xl border border-rose-950/40 space-y-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-full bg-rose-950/60 flex items-center justify-center text-rose-400">
-                <AlertTriangle className="w-4 h-4" />
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h4 className="text-sm font-bold text-white group-hover:text-amber-300 transition-colors font-mono">
+                      Explore Your Data in Local Storage
+                    </h4>
+                    <span className="px-2 py-0.5 rounded text-[9px] bg-sky-950/60 text-sky-300 font-bold border border-sky-800/40">
+                      DEDICATED EXPLORER
+                    </span>
+                  </div>
+                  <p className="text-xs text-neutral-400 mt-1 group-hover:text-neutral-300 transition-colors leading-relaxed">
+                    Analyze registered API blueprints, inspect decoupled headers and parameters, search key-values, and sync between devices.
+                  </p>
+                </div>
               </div>
-              <div>
-                <h3 className="text-sm font-bold text-white">Reset Local Data</h3>
-                <p className="text-xs text-neutral-400">Permanently wipe all workflows and execution logs from your browser</p>
+
+              <div className="px-4 py-2 bg-[#FF6C37] group-hover:bg-[#FF8A5C] text-white text-xs font-bold rounded-lg transition-colors flex items-center justify-center gap-1.5 shadow-sm shrink-0 border-none self-start sm:self-auto">
+                <HardDrive className="w-3.5 h-3.5" />
+                <span>Open Explorer →</span>
               </div>
             </div>
+          </Link>
 
-            <button
-              onClick={handleClearAllData}
-              className="px-3.5 py-2 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-lg transition-colors cursor-pointer flex items-center gap-1.5 shadow-sm touch-press"
-            >
-              <Trash2 className="w-3.5 h-3.5" />
-              <span>Clear All Data</span>
-            </button>
+          {/* Quick Storage Metrics Summary */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center font-mono pt-1">
+            <div className="bg-[#18181c] p-2.5 rounded-lg border border-neutral-850">
+              <div className="text-[10px] text-neutral-400 uppercase font-semibold">Registered Workflows</div>
+              <div className="text-sm font-bold text-white mt-0.5">{stats.workflowsCount}</div>
+            </div>
+            <div className="bg-[#18181c] p-2.5 rounded-lg border border-neutral-850">
+              <div className="text-[10px] text-neutral-400 uppercase font-semibold">Total Endpoints</div>
+              <div className="text-sm font-bold text-white mt-0.5">{stats.stepsCount}</div>
+            </div>
+            <div className="bg-[#18181c] p-2.5 rounded-lg border border-neutral-850">
+              <div className="text-[10px] text-neutral-400 uppercase font-semibold">Carried Keys & Payloads</div>
+              <div className="text-sm font-bold text-sky-400 mt-0.5">{stats.dataItemsCount}</div>
+            </div>
+            <div className="bg-[#18181c] p-2.5 rounded-lg border border-neutral-850">
+              <div className="text-[10px] text-neutral-400 uppercase font-semibold">Storage Used</div>
+              <div className="text-sm font-bold text-emerald-400 mt-0.5">
+                {(stats.bytesUsed / 1024).toFixed(1)} KB
+              </div>
+            </div>
           </div>
         </div>
 

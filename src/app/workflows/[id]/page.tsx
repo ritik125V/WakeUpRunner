@@ -90,6 +90,8 @@ import {
 // import { openGithubAppInstallPopup } from '@/lib/githubPopup';
 const openGithubAppInstallPopup = (_opts: any) => {};
 import { ApiResponseDrawer } from '@/components/ApiResponseDrawer';
+import { JsonColorViewer } from '@/components/JsonColorViewer';
+import { JsonCodeEditor } from '@/components/JsonCodeEditor';
 import { AiSpecImportModal } from '@/components/AiSpecImportModal';
 import {
   generateWorkflowPDFReport,
@@ -318,11 +320,17 @@ export default function WorkflowDetailPage() {
   const { setHeaderState } = useWorkflowHeader();
 
   const [workflow, setWorkflow] = useState<WorkflowData | null>(null);
+  const workflowRef = useRef<WorkflowData | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [saving, setSaving] = useState<boolean>(false);
   const [syncState, setSyncState] = useState<'idle' | 'editing' | 'autosaving' | 'saved' | 'error'>('idle');
   const autoSyncTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isFirstMountRef = useRef<boolean>(true);
+
+  // Keep workflowRef strictly up-to-date with latest state
+  useEffect(() => {
+    workflowRef.current = workflow;
+  }, [workflow]);
   const [activeStepIndex, setActiveStepIndex] = useState<number>(0);
   const [activeTab, setActiveTab] = useState<'params' | 'headers' | 'body' | 'cookies' | 'variables'>('body');
 
@@ -440,70 +448,73 @@ export default function WorkflowDetailPage() {
   const [pushSimResult, setPushSimResult] = useState<string | null>(null);
   const [copiedWebhookUrl, setCopiedWebhookUrl] = useState<boolean>(false);
 
+  // Instantly persist workflow state to LocalStorage and React state synchronously
+  const persistWorkflowState = (updatedWf: WorkflowData) => {
+    workflowRef.current = updatedWf;
+    setWorkflow(updatedWf);
+    saveLocalWorkflow(updatedWf);
+    setSyncState('saved');
+    if (autoSyncTimeoutRef.current) {
+      clearTimeout(autoSyncTimeoutRef.current);
+    }
+    autoSyncTimeoutRef.current = setTimeout(() => {
+      setSyncState('idle');
+    }, 1500);
+  };
+
+  // Instantly persist any changes in workflow / settings to LocalStorage without delay
   useEffect(() => {
     if (isFirstMountRef.current) {
       isFirstMountRef.current = false;
       return;
     }
-    if (!workflow) return;
+    if (!workflow || loading) return;
 
-    if (autoSyncTimeoutRef.current) {
-      clearTimeout(autoSyncTimeoutRef.current);
-    }
-
-    // Wait 10 seconds of inactivity after user finishes editing
-    autoSyncTimeoutRef.current = setTimeout(async () => {
-      try {
-        // Display "Auto-saving" only while active DB and localStorage sync call is executing
-        setSyncState('autosaving');
-        await updateWorkflow(workflow._id, {
-          name: workflow.name,
-          description: workflow.description,
-          steps: workflow.steps,
-          githubEnabled,
-          githubRepo,
-          githubBranch,
-          notificationEmail,
-        });
-        setSyncState('saved');
-        setTimeout(() => {
-          setSyncState('idle');
-        }, 2500);
-      } catch (err) {
-        console.error('Auto-sync error:', err);
-        setSyncState('error');
-      }
-    }, 10000);
-
-    return () => {
+    try {
+      const merged: WorkflowData = {
+        ...workflow,
+        githubEnabled,
+        githubRepo,
+        githubBranch,
+        notificationEmail,
+      };
+      workflowRef.current = merged;
+      saveLocalWorkflow(merged);
+      setSyncState('saved');
       if (autoSyncTimeoutRef.current) {
         clearTimeout(autoSyncTimeoutRef.current);
       }
-    };
-  }, [workflow?.name, workflow?.description, workflow?.steps, githubEnabled, githubRepo, githubBranch, notificationEmail]);
+      autoSyncTimeoutRef.current = setTimeout(() => {
+        setSyncState('idle');
+      }, 1500);
+    } catch (err) {
+      console.error('Instant local storage sync error:', err);
+      setSyncState('error');
+    }
+  }, [workflow, githubEnabled, githubRepo, githubBranch, notificationEmail, loading]);
 
   const handleSaveWorkflow = async () => {
-    if (!workflow) return;
+    const currentWf = workflowRef.current || workflow;
+    if (!currentWf) return;
     if (autoSyncTimeoutRef.current) {
       clearTimeout(autoSyncTimeoutRef.current);
     }
     try {
       setSaving(true);
       setSyncState('autosaving');
-      const res = await updateWorkflow(workflow._id, {
-        name: workflow.name,
-        description: workflow.description,
-        steps: workflow.steps,
+      const updated = saveLocalWorkflow({
+        ...currentWf,
         githubEnabled,
         githubRepo,
         githubBranch,
         notificationEmail,
       });
-      setWorkflow(res.workflow);
+      workflowRef.current = updated;
+      setWorkflow(updated);
       setSyncState('saved');
       setTimeout(() => {
         setSyncState('idle');
-      }, 2500);
+      }, 1500);
     } catch (err) {
       console.error('Failed to save workflow:', err);
       setSyncState('error');
@@ -1006,6 +1017,7 @@ export default function WorkflowDetailPage() {
     try {
       setLoading(true);
       const res = await fetchWorkflowById(workflowId);
+      workflowRef.current = res.workflow;
       setWorkflow(res.workflow);
       setGithubEnabled(res.workflow.githubEnabled || false);
       setGithubRepo(res.workflow.githubRepo || '');
@@ -1335,13 +1347,14 @@ export default function WorkflowDetailPage() {
   };
 
   const handleAddStep = () => {
-    if (!workflow) return;
+    const currentWf = workflowRef.current || workflow;
+    if (!currentWf) return;
     
-    const hasPreviousCookieCapture = workflow.steps.some((s) => s.captureCookies !== false);
+    const hasPreviousCookieCapture = currentWf.steps.some((s) => s.captureCookies !== false);
 
     const newStep: IWorkflowStepData = {
       stepId: `step-${Date.now()}`,
-      name: `Step ${workflow.steps.length + 1}: New Request`,
+      name: `Step ${currentWf.steps.length + 1}: New Request`,
       url: 'https://httpbin.org/get',
       method: 'GET',
       headers: { 'Accept': 'application/json' },
@@ -1354,8 +1367,9 @@ export default function WorkflowDetailPage() {
       extractVariables: [],
     };
 
-    const updatedSteps = [...workflow.steps, newStep];
-    setWorkflow({ ...workflow, steps: updatedSteps });
+    const updatedSteps = [...currentWf.steps, newStep];
+    const updatedWf = { ...currentWf, steps: updatedSteps };
+    persistWorkflowState(updatedWf);
     setActiveStepIndex(updatedSteps.length - 1);
   };
 
@@ -1368,7 +1382,8 @@ export default function WorkflowDetailPage() {
     expectedStatusCode?: number;
     extractVariables?: IWorkflowVariableExtract[];
   }) => {
-    if (!workflow) return;
+    const currentWf = workflowRef.current || workflow;
+    if (!currentWf) return;
 
     const newStep: IWorkflowStepData = {
       stepId: `step-${Date.now()}`,
@@ -1385,52 +1400,60 @@ export default function WorkflowDetailPage() {
       extractVariables: preset.extractVariables || [],
     };
 
-    const updatedSteps = [...workflow.steps, newStep];
-    setWorkflow({ ...workflow, steps: updatedSteps });
+    const updatedSteps = [...currentWf.steps, newStep];
+    const updatedWf = { ...currentWf, steps: updatedSteps };
+    persistWorkflowState(updatedWf);
     setActiveStepIndex(updatedSteps.length - 1);
     setIsAuthModalOpen(false);
   };
 
   const handleCloneStep = (index: number) => {
-    if (!workflow) return;
-    const target = workflow.steps[index];
+    const currentWf = workflowRef.current || workflow;
+    if (!currentWf) return;
+    const target = currentWf.steps[index];
     const cloned: IWorkflowStepData = JSON.parse(JSON.stringify(target));
     cloned.stepId = `step-${Date.now()}`;
     cloned.name = `${cloned.name} (Copy)`;
-    const updatedSteps = [...workflow.steps];
+    const updatedSteps = [...currentWf.steps];
     updatedSteps.splice(index + 1, 0, cloned);
-    setWorkflow({ ...workflow, steps: updatedSteps });
+    const updatedWf = { ...currentWf, steps: updatedSteps };
+    persistWorkflowState(updatedWf);
     setActiveStepIndex(index + 1);
   };
 
   const handleDeleteStep = (index: number) => {
-    if (!workflow || workflow.steps.length <= 1) {
+    const currentWf = workflowRef.current || workflow;
+    if (!currentWf || currentWf.steps.length <= 1) {
       alert('A workflow must have at least one step.');
       return;
     }
-    const updatedSteps = workflow.steps.filter((_, i) => i !== index);
-    setWorkflow({ ...workflow, steps: updatedSteps });
+    const updatedSteps = currentWf.steps.filter((_, i) => i !== index);
+    const updatedWf = { ...currentWf, steps: updatedSteps };
+    persistWorkflowState(updatedWf);
     if (activeStepIndex >= updatedSteps.length) {
       setActiveStepIndex(updatedSteps.length - 1);
     }
   };
 
   const handleMoveStep = (index: number, direction: 'up' | 'down') => {
-    if (!workflow) return;
+    const currentWf = workflowRef.current || workflow;
+    if (!currentWf) return;
     const newIndex = direction === 'up' ? index - 1 : index + 1;
-    if (newIndex < 0 || newIndex >= workflow.steps.length) return;
-    const updatedSteps = [...workflow.steps];
+    if (newIndex < 0 || newIndex >= currentWf.steps.length) return;
+    const updatedSteps = [...currentWf.steps];
     const temp = updatedSteps[index];
     updatedSteps[index] = updatedSteps[newIndex];
     updatedSteps[newIndex] = temp;
-    setWorkflow({ ...workflow, steps: updatedSteps });
+    const updatedWf = { ...currentWf, steps: updatedSteps };
+    persistWorkflowState(updatedWf);
     setActiveStepIndex(newIndex);
   };
 
   const updateCurrentStep = (fields: Partial<IWorkflowStepData>) => {
-    if (!workflow || !workflow.steps[activeStepIndex]) return;
+    const currentWf = workflowRef.current || workflow;
+    if (!currentWf || !currentWf.steps[activeStepIndex]) return;
     
-    let updatedSteps = [...workflow.steps];
+    let updatedSteps = [...currentWf.steps];
     const updatedCurrent = {
       ...updatedSteps[activeStepIndex],
       ...fields,
@@ -1446,7 +1469,72 @@ export default function WorkflowDetailPage() {
       });
     }
 
-    setWorkflow({ ...workflow, steps: updatedSteps });
+    const updatedWf: WorkflowData = {
+      ...currentWf,
+      steps: updatedSteps,
+      githubEnabled,
+      githubRepo,
+      githubBranch,
+      notificationEmail,
+    };
+
+    persistWorkflowState(updatedWf);
+  };
+
+  // Two-way synchronization helpers: URL <-> Query Params (Postman Style)
+  const syncUrlToParams = (newUrl: string) => {
+    try {
+      const qIdx = newUrl.indexOf('?');
+      if (qIdx === -1) {
+        updateCurrentStep({ url: newUrl, queryParams: {} });
+        return;
+      }
+
+      const queryString = newUrl.substring(qIdx + 1);
+      const params: Record<string, string> = {};
+
+      if (queryString.trim()) {
+        const parts = queryString.split('&');
+        for (const part of parts) {
+          if (!part) continue;
+          const eqIdx = part.indexOf('=');
+          const rawKey = eqIdx !== -1 ? part.substring(0, eqIdx) : part;
+          const rawVal = eqIdx !== -1 ? part.substring(eqIdx + 1) : '';
+          let key = rawKey;
+          let val = rawVal;
+          try {
+            key = decodeURIComponent(rawKey);
+          } catch {}
+          try {
+            val = decodeURIComponent(rawVal);
+          } catch {}
+          if (key) {
+            params[key] = val;
+          }
+        }
+      }
+
+      updateCurrentStep({ url: newUrl, queryParams: params });
+    } catch {
+      updateCurrentStep({ url: newUrl });
+    }
+  };
+
+  const syncParamsToUrl = (newParams: Record<string, string>) => {
+    const rawUrl = currentStep.url || '';
+    const qIdx = rawUrl.indexOf('?');
+    const baseUrl = qIdx !== -1 ? rawUrl.substring(0, qIdx) : rawUrl;
+
+    const validEntries = Object.entries(newParams).filter(([k]) => k.trim() !== '');
+    let newUrl = baseUrl;
+    if (validEntries.length > 0) {
+      const qs = validEntries
+        .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`)
+        .join('&');
+      newUrl = `${baseUrl}?${qs}`;
+    }
+
+    updateCurrentStep({ url: newUrl, queryParams: newParams });
   };
 
   const getMethodBadgeStyle = (method?: string) => {
@@ -1502,7 +1590,10 @@ export default function WorkflowDetailPage() {
     }
     setHeaderState({
       workflowName: workflow.name,
-      setWorkflowName: (name: string) => setWorkflow((prev) => (prev ? { ...prev, name } : prev)),
+      setWorkflowName: (name: string) => {
+        const current = workflowRef.current || workflow;
+        if (current) persistWorkflowState({ ...current, name });
+      },
       syncState,
       saving,
       onSave: handleSaveWorkflow,
@@ -1510,7 +1601,7 @@ export default function WorkflowDetailPage() {
       onRunWorkflow: handleOpenPreflight,
     });
     return () => setHeaderState(null);
-  }, [workflow?.name, syncState, saving, isRunning]);
+  }, [workflow, syncState, saving, isRunning]);
 
   if (loading || !workflow) {
     return (
@@ -1541,77 +1632,93 @@ export default function WorkflowDetailPage() {
 
             <div className="flex items-center gap-1.5 min-w-0">
               {/* Global Base URL Override Control (Placed on the right side of Step Sequence) */}
-              <div className="relative">
-                <button
-                  type="button"
-                  onClick={() => setIsBaseUrlPopoverOpen(!isBaseUrlPopoverOpen)}
-                  className="inline-flex items-center gap-1 px-2 py-1 bg-[#161619] hover:bg-[#222228] text-neutral-300 hover:text-white text-[10px] rounded-lg transition-colors cursor-pointer border-none font-mono"
-                  title="Change Base URL across all workflow steps in 1 click"
-                >
-                  <Globe className="w-3 h-3 text-[#FF6C37] shrink-0" />
-                  <span className="truncate max-w-[110px] sm:max-w-[130px] text-[10px]">{globalBaseUrl}</span>
-                  <ChevronDown className={`w-3 h-3 text-neutral-400 transition-transform shrink-0 ${isBaseUrlPopoverOpen ? 'rotate-180' : ''}`} />
-                </button>
+              <button
+                type="button"
+                onClick={() => setIsBaseUrlPopoverOpen(true)}
+                className="inline-flex items-center gap-1 px-2 py-1 bg-[#161619] hover:bg-[#222228] text-neutral-300 hover:text-white text-[10px] rounded-lg transition-colors cursor-pointer border-none font-mono"
+                title="Change Base URL across all workflow steps in 1 click"
+              >
+                <Globe className="w-3 h-3 text-[#FF6C37] shrink-0" />
+                <span className="truncate max-w-[110px] sm:max-w-[130px] text-[10px]">{globalBaseUrl}</span>
+                <ChevronDown className="w-3 h-3 text-neutral-400 shrink-0" />
+              </button>
 
-                <AnimatePresence>
-                  {isBaseUrlPopoverOpen && (
-                    <>
-                      <div className="fixed inset-0 z-40" onClick={() => setIsBaseUrlPopoverOpen(false)} />
-                      <motion.div
-                        initial={{ opacity: 0, y: 4, scale: 0.95 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: 4, scale: 0.95 }}
-                        transition={{ duration: 0.12 }}
-                        className="absolute left-0 mt-1.5 w-72 bg-neutral-950 rounded-xl p-3 shadow-2xl z-50 font-mono text-xs space-y-2 border border-neutral-800 select-none"
-                      >
-                        <div className="flex items-center justify-between border-b border-neutral-900 pb-2">
-                          <span className="font-bold text-white text-xs flex items-center gap-1.5">
-                            <Globe className="w-3.5 h-3.5 text-[#FF8A5C]" /> Bulk Base URL Override
-                          </span>
-                          <span className="text-[9px] text-neutral-500 font-bold uppercase">FRONTEND OVERRIDE</span>
-                        </div>
-
-                        <p className="text-[10px] text-neutral-400 leading-relaxed">
-                          Switch target server host/port across all {workflow.steps.length} workflow steps in 1 click:
-                        </p>
-
-                        <div className="space-y-1.5">
-                          <input
-                            type="text"
-                            value={globalBaseUrl}
-                            onChange={(e) => setGlobalBaseUrl(e.target.value)}
-                            placeholder="e.g. http://localhost:5000"
-                            className="base-url-input w-full bg-black text-xs font-mono text-white px-2.5 py-1.5 rounded-lg outline-none focus:border-[#FF6C37]/50"
-                          />
-
-                          {/* Presets */}
-                          <div className="flex flex-wrap gap-1">
-                            {['http://localhost:3000', 'http://localhost:5000', 'http://localhost:8000', 'http://127.0.0.1:5001'].map((preset) => (
-                              <button
-                                key={preset}
-                                type="button"
-                                onClick={() => setGlobalBaseUrl(preset)}
-                                className="px-1.5 py-0.5 bg-neutral-900 hover:bg-neutral-800 text-neutral-300 text-[9px] rounded font-bold transition-colors cursor-pointer border-none"
-                              >
-                                {preset}
-                              </button>
-                            ))}
+              <AnimatePresence>
+                {isBaseUrlPopoverOpen && (
+                  <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm">
+                    <div className="fixed inset-0" onClick={() => setIsBaseUrlPopoverOpen(false)} />
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                      transition={{ duration: 0.15 }}
+                      className="relative z-10 w-full max-w-md bg-[#121214] rounded-2xl p-5 shadow-2xl font-mono text-xs space-y-4 border border-neutral-800 select-none"
+                    >
+                      <div className="flex items-center justify-between border-b border-neutral-800/80 pb-3">
+                        <div className="flex items-center gap-2">
+                          <div className="w-7 h-7 rounded-full bg-[#1a1a1e] flex items-center justify-center text-[#FF6C37]">
+                            <Globe className="w-4 h-4" />
+                          </div>
+                          <div>
+                            <h3 className="font-bold text-white text-xs">Bulk Base URL Override</h3>
+                            <p className="text-[10px] text-neutral-400">Update host and port across all steps in 1 click</p>
                           </div>
                         </div>
 
                         <button
                           type="button"
-                          onClick={handleApplyBulkBaseUrl}
-                          className="w-full py-1.5 bg-[#FF6C37] hover:bg-[#FF8A5C] text-white font-bold text-xs rounded-lg transition-colors cursor-pointer border-none flex items-center justify-center gap-1.5 shadow-sm"
+                          onClick={() => setIsBaseUrlPopoverOpen(false)}
+                          className="p-1.5 text-neutral-400 hover:text-white hover:bg-[#1a1a1e] rounded-lg transition-colors cursor-pointer border-none"
+                        >
+                          ✕
+                        </button>
+                      </div>
+
+                      <p className="text-[11px] text-neutral-300 leading-relaxed">
+                        Switch target server host/port across all <span className="text-white font-bold">{workflow.steps.length}</span> workflow steps:
+                      </p>
+
+                      <div className="space-y-2">
+                        <input
+                          type="text"
+                          value={globalBaseUrl}
+                          onChange={(e) => setGlobalBaseUrl(e.target.value)}
+                          placeholder="e.g. http://localhost:5000"
+                          className="w-full bg-[#18181c] text-xs font-mono text-white px-3 py-2 rounded-lg outline-none border border-neutral-800 focus:border-neutral-600"
+                        />
+
+                        {/* Presets */}
+                        <div className="flex flex-wrap gap-1.5 pt-0.5">
+                          {['http://localhost:3000', 'http://localhost:5000', 'http://localhost:8000', 'http://127.0.0.1:5001'].map((preset) => (
+                            <button
+                              key={preset}
+                              type="button"
+                              onClick={() => setGlobalBaseUrl(preset)}
+                              className="px-2 py-1 bg-[#18181c] hover:bg-[#222228] text-neutral-300 hover:text-white text-[10px] rounded-md font-bold transition-colors cursor-pointer border border-neutral-800/60"
+                            >
+                              {preset}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="pt-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            handleApplyBulkBaseUrl();
+                            setIsBaseUrlPopoverOpen(false);
+                          }}
+                          className="w-full py-2 bg-[#FF6C37] hover:bg-[#FF8A5C] text-white font-bold text-xs rounded-xl transition-colors cursor-pointer border-none flex items-center justify-center gap-1.5 shadow-md touch-press"
                         >
                           <Zap className="w-3.5 h-3.5 fill-current" />
-                          <span>Apply to All Steps</span>
+                          <span>Apply</span>
                         </button>
-                      </motion.div>
-                    </>
-                  )}
-                </AnimatePresence>
-              </div>
+                      </div>
+                    </motion.div>
+                  </div>
+                )}
+              </AnimatePresence>
 
               {/* Add Step button */}
               <button
@@ -1775,7 +1882,7 @@ export default function WorkflowDetailPage() {
                   value={currentStep.url}
                   onFocus={() => setIsUrlDropdownOpen(true)}
                   onChange={(e) => {
-                    updateCurrentStep({ url: e.target.value });
+                    syncUrlToParams(e.target.value);
                     setIsUrlDropdownOpen(true);
                   }}
                   className="w-full bg-transparent text-xs text-white px-2 py-1.5 focus:outline-none min-w-0 flex-1 font-mono placeholder-neutral-500 border-none"
@@ -1801,17 +1908,19 @@ export default function WorkflowDetailPage() {
                             type="button"
                             onClick={() => {
                               const cleanHost = host.replace(/\/$/, '');
+                              let newTarget = '';
                               if (!currentStep.url || currentStep.url.startsWith('/')) {
-                                updateCurrentStep({ url: `${cleanHost}${currentStep.url.startsWith('/') ? '' : '/'}${currentStep.url}` });
+                                newTarget = `${cleanHost}${currentStep.url.startsWith('/') ? '' : '/'}${currentStep.url}`;
                               } else {
                                 try {
                                   const urlObj = new URL(currentStep.url);
-                                  updateCurrentStep({ url: `${cleanHost}${urlObj.pathname}${urlObj.search}` });
+                                  newTarget = `${cleanHost}${urlObj.pathname}${urlObj.search}`;
                                 } catch {
                                   const pathPart = currentStep.url.replace(/^https?:\/\/[^\/]+/, '');
-                                  updateCurrentStep({ url: `${cleanHost}${pathPart.startsWith('/') ? '' : '/'}${pathPart}` });
+                                  newTarget = `${cleanHost}${pathPart.startsWith('/') ? '' : '/'}${pathPart}`;
                                 }
                               }
+                              syncUrlToParams(newTarget);
                               setIsUrlDropdownOpen(false);
                             }}
                             className="px-2 py-1 bg-neutral-900 hover:bg-neutral-800 text-purple-300 rounded text-[10px] font-bold transition-colors cursor-pointer border-none"
@@ -1839,11 +1948,12 @@ export default function WorkflowDetailPage() {
                                     }
                                   } catch {}
                                   const path = ep.path.startsWith('/') ? ep.path : `/${ep.path}`;
+                                  const fullUrl = `${host}${path}`;
                                   updateCurrentStep({
                                     method: ep.method,
-                                    url: `${host}${path}`,
                                     bodyPayload: ep.suggestedBody || currentStep.bodyPayload,
                                   });
+                                  syncUrlToParams(fullUrl);
                                   setIsUrlDropdownOpen(false);
                                 }}
                                 className="w-full text-left px-2.5 py-1.5 hover:bg-neutral-900 rounded-lg flex items-center justify-between transition-colors text-[11px] cursor-pointer border-none"
@@ -2020,7 +2130,7 @@ export default function WorkflowDetailPage() {
               {activeTab === 'body' && (
                 <div className="space-y-2.5 w-full flex-1 flex flex-col min-h-0">
                   <div className="flex items-center justify-between text-xs text-neutral-400 flex-wrap gap-2 shrink-0">
-                    <div className="flex items-center gap-2 font-mono text-[11px]">
+                    <div className="flex items-center gap-3 font-mono text-[11px]">
                       <span className="px-2 py-0.5 bg-[#1a1a1e] text-neutral-300 rounded text-[10px] font-bold">
                         JSON (application/json)
                       </span>
@@ -2050,14 +2160,15 @@ export default function WorkflowDetailPage() {
                     </div>
                   </div>
 
-                  <textarea
-                    value={(currentStep.bodyPayload || '').replace(/\\n/g, '\n').replace(/\\"/g, '"')}
-                    onChange={(e) => updateCurrentStep({ bodyPayload: e.target.value })}
-                    onKeyDown={handleBodyKeyDown}
-                    placeholder='{\n  "email": "user@example.com",\n  "token": "{{authToken}}"\n}'
-                    className="w-full flex-1 min-h-[120px] bg-[#0c0c0e] text-xs font-mono p-4 rounded-xl border-none focus:outline-none focus:ring-1 focus:ring-white/10 leading-relaxed shadow-inner resize-none overflow-y-auto"
-                    style={{ color: 'var(--editor-code-color, #f8fafc)' }}
-                  />
+                  <div className="flex-1 flex flex-col min-h-[160px] request-body-container">
+                    <JsonCodeEditor
+                      value={currentStep.bodyPayload || ''}
+                      onChange={(val) => updateCurrentStep({ bodyPayload: val })}
+                      placeholder='{\n  "email": "user@example.com",\n  "token": "{{authToken}}"\n}'
+                      minHeight="160px"
+                      className="flex-1 min-h-[160px]"
+                    />
+                  </div>
                 </div>
               )}
 
@@ -2065,23 +2176,36 @@ export default function WorkflowDetailPage() {
               {activeTab === 'params' && (
                 <div className="space-y-3 w-full">
                   <div className="flex items-center justify-between text-xs text-neutral-400 flex-wrap gap-2">
-                    <span className="font-mono">URL Query Parameters (`?key=value`)</span>
-                    <button
-                      onClick={() => {
-                        const existing = currentStep.queryParams || {};
-                        updateCurrentStep({
-                          queryParams: { ...existing, 'paramKey': 'paramVal' },
-                        });
-                      }}
-                      className="px-2.5 py-1 bg-[#18181c] hover:bg-[#222228] text-amber-300 text-[11px] font-bold rounded-lg transition-colors cursor-pointer border-none"
-                    >
-                      + Add Query Param
-                    </button>
+                    <span className="font-mono text-neutral-300">URL Query Parameters (`?key=value`)</span>
+                    <div className="flex items-center gap-2">
+                      {Object.keys(currentStep.queryParams || {}).length > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => syncParamsToUrl({})}
+                          className="px-2 py-1 bg-[#161619] hover:bg-[#202026] text-neutral-400 hover:text-rose-400 text-[11px] font-semibold rounded-lg transition-colors cursor-pointer border-none"
+                        >
+                          Clear All
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const existing = currentStep.queryParams || {};
+                          const nextIdx = Object.keys(existing).length + 1;
+                          const newKey = `param_${nextIdx}`;
+                          const updated = { ...existing, [newKey]: '' };
+                          syncParamsToUrl(updated);
+                        }}
+                        className="px-2.5 py-1 bg-[#18181c] hover:bg-[#222228] text-amber-300 text-[11px] font-bold rounded-lg transition-colors cursor-pointer border-none"
+                      >
+                        + Add Query Param
+                      </button>
+                    </div>
                   </div>
 
                   {Object.entries(currentStep.queryParams || {}).length === 0 ? (
                     <div className="p-6 bg-[#0c0c0e] rounded-xl text-center text-neutral-500 text-xs border-none font-mono">
-                      No query parameters configured. Click "+ Add Query Param" above to append URL query parameters.
+                      No query parameters configured. Click "+ Add Query Param" above or type directly into the URL bar (e.g. `?page=1`).
                     </div>
                   ) : (
                     Object.entries(currentStep.queryParams || {}).map(([key, val], idx) => (
@@ -2091,10 +2215,15 @@ export default function WorkflowDetailPage() {
                           value={key}
                           onChange={(e) => {
                             const newKey = e.target.value;
-                            const copy = { ...currentStep.queryParams };
-                            delete copy[key];
-                            copy[newKey] = val;
-                            updateCurrentStep({ queryParams: copy });
+                            const copy: Record<string, string> = {};
+                            Object.entries(currentStep.queryParams || {}).forEach(([k, v]) => {
+                              if (k === key) {
+                                copy[newKey] = v;
+                              } else {
+                                copy[k] = v;
+                              }
+                            });
+                            syncParamsToUrl(copy);
                           }}
                           placeholder="Key (e.g. page)"
                           className="col-span-5 bg-[#161619] text-xs px-3 py-2 rounded-lg text-white border-none focus:outline-none focus:ring-1 focus:ring-white/20 min-w-0"
@@ -2103,20 +2232,21 @@ export default function WorkflowDetailPage() {
                           type="text"
                           value={val}
                           onChange={(e) => {
-                            const copy = { ...currentStep.queryParams };
-                            copy[key] = e.target.value;
-                            updateCurrentStep({ queryParams: copy });
+                            const copy = { ...(currentStep.queryParams || {}), [key]: e.target.value };
+                            syncParamsToUrl(copy);
                           }}
                           placeholder="Value (e.g. 1)"
                           className="col-span-6 bg-[#161619] text-xs px-3 py-2 rounded-lg text-amber-300 border-none focus:outline-none focus:ring-1 focus:ring-white/20 min-w-0"
                         />
                         <button
+                          type="button"
                           onClick={() => {
-                            const copy = { ...currentStep.queryParams };
+                            const copy = { ...(currentStep.queryParams || {}) };
                             delete copy[key];
-                            updateCurrentStep({ queryParams: copy });
+                            syncParamsToUrl(copy);
                           }}
                           className="col-span-1 p-1.5 text-neutral-500 hover:text-red-400 flex items-center justify-center bg-transparent border-none cursor-pointer"
+                          title="Remove parameter"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>

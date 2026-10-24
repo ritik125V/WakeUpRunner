@@ -124,14 +124,26 @@ export const testSingleWorkflowStep = async (
   variablesContext?: Record<string, string>,
   cookiesContext?: Record<string, string>
 ): Promise<IStepLogTelemetry> => {
-  return await executeStepClient(step, variablesContext || {}, cookiesContext || {});
+  // Postman synchronization: If step.url already includes query params and step.queryParams is non-empty,
+  // sanitize step so neither the edge runner nor browser engine duplicates query parameters
+  const stepToRun =
+    step.url && step.url.includes('?') && step.queryParams && Object.keys(step.queryParams).length > 0
+      ? { ...step, queryParams: {} }
+      : step;
+  return await executeStepClient(stepToRun, variablesContext || {}, cookiesContext || {});
 };
 
 export async function executeWorkflowInBrowser(
   workflow: WorkflowData,
   onStepCompleted?: (telemetry: IStepLogTelemetry) => void
 ): Promise<IWorkflowRunSummary> {
-  const summary = await executeFlowClient(workflow.steps, workflow.name, onStepCompleted);
+  const sanitizedSteps = workflow.steps.map((step) => {
+    if (step.url && step.url.includes('?') && step.queryParams && Object.keys(step.queryParams).length > 0) {
+      return { ...step, queryParams: {} };
+    }
+    return step;
+  });
+  const summary = await executeFlowClient(sanitizedSteps, workflow.name, onStepCompleted);
 
   // Automatically save run report locally
   try {

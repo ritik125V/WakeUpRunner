@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { Sparkles, Check, AlertCircle } from 'lucide-react';
+import { JsonCodeEditor } from '@/components/JsonCodeEditor';
 
 interface BodyPayloadTabProps {
   body: string;
@@ -28,11 +29,11 @@ export function BodyPayloadTab({ body, onChange, disabled }: BodyPayloadTabProps
 
   return (
     <div className="flex flex-col h-full space-y-2">
-      <div className="flex items-center justify-between text-xs px-1">
+      <div className="flex items-center justify-between text-xs px-1 flex-wrap gap-2">
         <div className="flex items-center gap-2 text-neutral-400 font-mono text-[11px]">
-          <span>Format: <strong className="text-white">JSON / Raw</strong></span>
-          <span className="text-neutral-600">•</span>
-          <span>Interpolation: <code className="text-[#FF8A5C] bg-[#FF6C37]/15 px-1 py-0.5 rounded text-[10px]">&#123;&#123;varName&#125;&#125;</code></span>
+          <span>Format: <strong className="text-white">JSON (application/json)</strong></span>
+          <span className="text-neutral-600 hidden sm:inline">•</span>
+          <span className="hidden sm:inline">Interpolation: <code className="text-[#FF8A5C] bg-[#FF6C37]/15 px-1 py-0.5 rounded text-[10px]">&#123;&#123;varName&#125;&#125;</code></span>
         </div>
 
         <button
@@ -60,16 +61,13 @@ export function BodyPayloadTab({ body, onChange, disabled }: BodyPayloadTabProps
         </button>
       </div>
 
-      <div className="flex-1 min-h-[220px] relative rounded-xl overflow-hidden bg-[#0d0d10]">
-        <textarea
+      <div className="flex-1 min-h-[220px] relative rounded-xl overflow-hidden bg-[#0d0d10] flex flex-col request-body-container">
+        <JsonCodeEditor
           value={body || ''}
-          onChange={(e) => onChange(e.target.value)}
-          disabled={disabled}
+          onChange={onChange}
+          minHeight="220px"
+          className="w-full h-full flex-1"
           placeholder={`{\n  "email": "test@example.com",\n  "auth_token": "{{accessToken}}"\n}`}
-          rows={12}
-          className="w-full h-full p-4 bg-transparent placeholder-neutral-600 font-mono text-xs leading-relaxed outline-none resize-none"
-          style={{ color: 'var(--editor-code-color, #f8fafc)' }}
-          spellCheck={false}
         />
       </div>
     </div>

@@ -38,6 +38,41 @@
   outline-offset: 2px;
 }
 
+/* Remove orange border/outline on search in response input */
+.search-response-input,
+.search-response-input:focus,
+.search-response-input:focus-visible,
+input[placeholder*="Search in response"]:focus,
+input[placeholder*="Search in response"]:focus-visible {
+  outline: none !important;
+  outline-color: transparent !important;
+  box-shadow: none !important;
+  border-color: #3f3f46 !important;
+}
+
+/* Remove orange border/outline on request body editor & all JSON code editors */
+.json-code-editor,
+.json-code-editor *,
+.json-code-editor:focus,
+.json-code-editor:focus-visible,
+.json-code-editor *:focus,
+.json-code-editor *:focus-visible,
+.request-body-container,
+.request-body-container *,
+.request-body-container:focus,
+.request-body-container:focus-visible,
+.request-body-container *:focus,
+.request-body-container *:focus-visible,
+textarea.json-editor-textarea,
+textarea.json-editor-textarea:focus,
+textarea.json-editor-textarea:focus-visible {
+  outline: none !important;
+  outline-color: transparent !important;
+  outline-style: none !important;
+  outline-width: 0 !important;
+  box-shadow: none !important;
+}
+
 body {
   background-color: var(--color-canvas, #000000);
   color: var(--color-text-primary, #e5e5e5);

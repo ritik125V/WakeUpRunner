@@ -1,0 +1,7 @@
+# Putman Agent Rules - API Engine & Core Guardrails
+
+Before taking any action or generating code:
+1. READ AGENT_INSTRUCTIONS.md at the workspace root.
+2. The core API engine (src/core/engine/*), storage (src/lib/workflowLocalStorage.ts), and request/response components (src/components/JsonColorViewer.tsx, src/components/ApiResponseDrawer.tsx) are PROTECTED.
+3. NEVER modify these files without first proposing the change and receiving explicit user approval.
+4. Syntax highlighting and foldable object/array arrows are the permanent default for request and response bodies.

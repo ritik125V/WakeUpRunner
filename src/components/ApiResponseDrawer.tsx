@@ -21,6 +21,7 @@ import {
   ChevronDown,
   ChevronUp,
 } from 'lucide-react';
+import { JsonColorViewer } from '@/components/JsonColorViewer';
 
 export interface IApiResponseData {
   stepId?: string;
@@ -57,7 +58,6 @@ export function ApiResponseDrawer({
 }: ApiResponseDrawerProps) {
   const [activeTab, setActiveTab] = useState<'body' | 'headers' | 'cookies' | 'variables' | 'metrics'>('body');
   const [copied, setCopied] = useState<boolean>(false);
-  const [viewMode, setViewMode] = useState<'pretty' | 'raw'>('pretty');
   const [searchFilter, setSearchFilter] = useState<string>('');
   const [showCorsHelp, setShowCorsHelp] = useState<boolean>(false);
   const [activeCorsTab, setActiveCorsTab] = useState<'express' | 'fastapi' | 'flask' | 'spring'>('express');
@@ -346,45 +346,32 @@ export function ApiResponseDrawer({
           {/* TAB 1: RESPONSE BODY */}
           {activeTab === 'body' && (
             <div className="flex-1 flex flex-col min-h-0 overflow-hidden space-y-2">
-              <div className="flex items-center justify-between text-[11px] text-neutral-400 shrink-0">
+              <div className="flex items-center justify-between text-[11px] text-neutral-400 shrink-0 gap-2 flex-wrap">
                 <div className="flex items-center gap-3">
                   <span>Size: <span className="text-white font-bold">{payloadSizeBytes} B</span></span>
                   <span>Lines: <span className="text-white font-bold">{lineCount}</span></span>
                 </div>
-                {lineCount > 10 && (
+
+                {lineCount > 5 && (
                   <input
                     type="text"
-                    placeholder="Search payload content..."
+                    placeholder="Search in response..."
                     value={searchFilter}
                     onChange={(e) => setSearchFilter(e.target.value)}
-                    className="px-2.5 py-1 bg-neutral-900 text-white rounded text-[11px] border-none focus:outline-none w-44"
+                    className="search-response-input px-2.5 py-1 bg-[#18181c] text-white rounded-lg text-[11px] border border-neutral-800/80 outline-none focus:outline-none focus:ring-0 w-44 transition-colors"
+                    style={{ outline: 'none', boxShadow: 'none' }}
                   />
                 )}
               </div>
 
               {formattedBody ? (
-                <div className="font-mono text-xs bg-[#09090b] rounded-xl overflow-auto flex-1 min-h-0 ring-1 ring-white/10 shadow-inner p-2 select-text scrollbar-thin">
-                  <table className="w-full border-collapse font-mono text-[11px]">
-                    <tbody>
-                      {(searchFilter
-                        ? formattedBody.split('\n').filter((l) => l.toLowerCase().includes(searchFilter.toLowerCase()))
-                        : formattedBody.split('\n')
-                      ).map((line, idx) => (
-                        <tr key={idx} className="hover:bg-white/[0.03]">
-                          <td className="w-10 pr-3 py-0.5 text-right text-neutral-600 select-none font-mono text-[10px] border-r border-neutral-800/60 sticky left-0 bg-[#09090b] align-top">
-                            {idx + 1}
-                          </td>
-                          <td
-                            className="pl-3 py-0.5 whitespace-pre font-mono text-[11px] leading-relaxed select-text align-top"
-                            style={{ color: 'var(--editor-code-color, #f8fafc)' }}
-                          >
-                            {line}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                <JsonColorViewer
+                  content={formattedBody}
+                  searchFilter={searchFilter}
+                  showLineNumbers={true}
+                  maxHeight="100%"
+                  className="flex-1 min-h-0 ring-1 ring-white/10 shadow-inner"
+                />
               ) : (
                 <div className="p-8 bg-neutral-900/50 rounded-xl text-center text-neutral-500 text-xs">
                   No response body returned from server.
